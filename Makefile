@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 appname = example
 package = example
+=======
+appname = afctrack
+package = afctrack
+>>>>>>> b17ad1b (updated)
 
 # Default goal
 .DEFAULT_GOAL := help

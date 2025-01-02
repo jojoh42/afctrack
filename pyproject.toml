@@ -5,12 +5,21 @@ requires = [
 ]
 
 [project]
+<<<<<<< HEAD
 name = "aa-example-plugin"
 description = "Example Plugin for Alliance Auth (GitHub Version)"
 readme = "README.md"
 keywords = [
     "allianceauth",
     "example",
+=======
+name = "aa-afctrack-plugin"
+description = "afctrack Plugin for Alliance Auth (GitHub Version)"
+readme = "README.md"
+keywords = [
+    "allianceauth",
+    "afctrack",
+>>>>>>> b17ad1b (updated)
 ]
 license = { file = "LICENSE" }
 authors = [
@@ -39,6 +48,7 @@ dynamic = [
 dependencies = [
     "allianceauth>=4.3.1,<5",
 ]
+<<<<<<< HEAD
 urls.Changelog = "https://github.com/ppfeufer/aa-example-plugin/blob/master/CHANGELOG.md"
 urls."Issue / Bug Reports" = "https://github.com/ppfeufer/aa-example-plugin/issues"
 
@@ -48,4 +58,15 @@ path = "example/__init__.py"
 [tool.hatch.build]
 include = [
     "/example",
+=======
+urls.Changelog = "https://github.com/ppfeufer/aa-afctrack-plugin/blob/master/CHANGELOG.md"
+urls."Issue / Bug Reports" = "https://github.com/ppfeufer/aa-afctrack-plugin/issues"
+
+[tool.hatch.version]
+path = "afctrack/__init__.py"
+
+[tool.hatch.build]
+include = [
+    "/afctrack",
+>>>>>>> b17ad1b (updated)
 ]

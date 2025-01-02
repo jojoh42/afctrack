@@ -1,6 +1,10 @@
 [run]
 branch = True
+<<<<<<< HEAD
 source = example
+=======
+source = afctrack
+>>>>>>> b17ad1b (updated)
 
 [report]
 exclude_lines =
