@@ -16,6 +16,6 @@ def index(request: WSGIRequest) -> HttpResponse:
     :return:
     """
 
-    context = {"text": "Hello, World!"}
+    context = {"text": "Hello, World! 2"}
 
     return render(request, "afctrack/index.html", context)
