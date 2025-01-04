@@ -1,29 +1,25 @@
-# Django
-from django.contrib.auth.decorators import login_required, permission_required
-from django.core.handlers.wsgi import WSGIRequest
-from django.http import HttpResponse
 from django.shortcuts import render
-from .models import AtatFatlink
 from django.db.models import Count
+from django.contrib.auth.decorators import login_required, permission_required
+from django.http import HttpResponse
+from afat.models import FatLink  # Import the FatLink model from afat
 
 @login_required
-@permission_required("afctrack.fc_access")
-def index(request: WSGIRequest) -> HttpResponse:
+@permission_required("afctrack.fc_access", raise_exception=True)
+def index(request):
     """
     Index view that displays fleet counts per player.
-    :param request:
-    :return:
     """
-    
-    # Query to get fleet counts per player
-    fleet_counts = AtatFatlink.objects.values('creator_id')\
-                                       .annotate(fleet_count=Count('id'))\
-                                       .order_by('-fleet_count')
+    # Fetch fleet counts using a query similar to `get_fleet_counts`
+    fleet_counts = FatLink.objects.values('creator_id')\
+                                  .annotate(fleet_count=Count('id'))\
+                                  .order_by('-fleet_count')
 
-    # Pass the fleet counts to the context
+    # Prepare the context for rendering the template
     context = {
         "text": "Hello, World! 2",
-        "fleet_counts": fleet_counts  # Add fleet counts to the context
+        "fleet_counts": fleet_counts  # Pass the fleet counts to the template
     }
 
+    # Render the template with the context
     return render(request, "afctrack/index.html", context)

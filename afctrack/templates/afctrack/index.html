@@ -1,43 +1,55 @@
+{% extends "base.html" %} <!-- Ensure you extend your base template -->
+
 {% block details %}
+    <!-- Headline Card -->
     <div class="card card-primary">
         <div class="card-header">
-            <div class="card-title">{% translate "Headline" %}</div>
+            <div class="card-title">
+                {% blocktrans %}Headline{% endblocktrans %}
+            </div>
         </div>
-
         <div class="card-body">
-            {{ text }}
+            <p>{{ text }}</p>
         </div>
     </div>
 
-    <!-- Display Fleet Counts -->
-    <div class="card card-info">
+    <!-- Fleet Counts Card -->
+    <div class="card card-info mt-4">
         <div class="card-header">
-            <div class="card-title">Fleet Counts</div>
+            <div class="card-title">
+                {% blocktrans %}Fleet Counts{% endblocktrans %}
+            </div>
         </div>
         <div class="card-body">
-            <!-- Debugging: Check if fleet_counts is passed correctly -->
-            <pre>{{ fleet_counts }}</pre>
-
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Creator ID</th>
-                        <th>Fleets Created</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for player in fleet_counts %}
+            <!-- Debugging Fleet Counts -->
+            {% if fleet_counts %}
+                <table class="table table-striped">
+                    <thead>
                         <tr>
-                            <td>{{ player.creator_id }}</td>
-                            <td>{{ player.fleet_count }}</td>
+                            <th>{% blocktrans %}Creator ID{% endblocktrans %}</th>
+                            <th>{% blocktrans %}Fleets Created{% endblocktrans %}</th>
                         </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="2">No data available</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% for player in fleet_counts %}
+                            <tr>
+                                <td>{{ player.creator_id }}</td>
+                                <td>{{ player.fleet_count }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="2" class="text-center">
+                                    {% blocktrans %}No fleet data available{% endblocktrans %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-center text-muted">
+                    {% blocktrans %}No fleet data available{% endblocktrans %}
+                </p>
+            {% endif %}
         </div>
     </div>
 {% endblock %}
