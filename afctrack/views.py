@@ -24,8 +24,7 @@ def index(request: WSGIRequest) -> HttpResponse:
 
     # Pass the fleet counts to the context
     context = {
-        "text": "Hello, World! 2",
-        "fleet_counts": fleet_counts  # Add fleet counts to the context
+        "text": fleet_counts  # Add fleet counts to the context
     }
 
     return render(request, "afctrack/index.html", context)

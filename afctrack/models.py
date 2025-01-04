@@ -4,6 +4,7 @@ Create your models in here
 """
 
 # Django
+from itertools import count
 from django.db import models
 
 class General(models.Model):
@@ -38,7 +39,7 @@ class AtatFatlink(models.Model):
 
 # Get all the players (creator_id) and count the number of fleets they have created
 fleet_counts = AtatFatlink.objects.values('creator_id')\
-                                   .annotate(fleet_count=Count('fleet_id'))\
+                                   .annotate(fleet_count=count('fleet_id'))\
                                    .order_by('-fleet_count')
 
 # Print the results
