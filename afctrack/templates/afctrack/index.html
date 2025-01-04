@@ -4,22 +4,13 @@
 {% load humanize %}
 
 {% block details %}
-    <div class="card card-primary">
-        <div class="card-header">
-            <div class="card-title">{% translate "Headline" %}</div>
-        </div>
-
-        <div class="card-body">
-            {{ text }}
-        </div>
-    </div>
-
     <!-- Display Fleet Counts -->
     <div class="card card-info">
         <div class="card-header">
-            <div class="card-title">Fleet Counts</div>
+            <div class="card-title">{% translate "Headline" %}</div>
         </div>
         <div class="card-body">
+            {{ text }}
             <table class="table">
                 <thead>
                     <tr>
