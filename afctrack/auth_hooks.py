@@ -18,7 +18,7 @@ class afctrackMenuItem(MenuItemHook):
         # setup menu entry for sidebar
         MenuItemHook.__init__(
             self,
-            _("afctrack App"),
+            _("FC Activity Tracker"),
             "fas fa-cube fa-fw",
             "afctrack:index",
             navactive=["afctrack:"],
