@@ -27,11 +27,12 @@ class MonthlyFCPayment(models.Model):
     fleet_amount = models.IntegerField(verbose_name="Fleet Amount", blank=False, default=0)
 
 class AtatFatlink(models.Model):
-    creator_id = models.IntegerField(verbose_name="Creator ID")  # Player ID
-    fleet_id = models.IntegerField(verbose_name="Fleet ID")
+    creator_id = models.IntegerField()
+    fleet_id = models.IntegerField()
 
     class Meta:
-        db_table = 'afat_fatlink'  # Ensure this matches the actual table name in the database
+        db_table = 'afctrack_atatfatlink'  # Use a distinct table name
+
 
 # Get all the players (creator_id) and count the number of fleets they have created
 fleet_counts = AtatFatlink.objects.values('creator_id')\
