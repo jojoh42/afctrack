@@ -25,12 +25,13 @@ class MonthlyFCPayment(models.Model):
 
 # Refactor the query into a function that is called after models are loaded
 def get_fleet_counts():
-    fleet_counts = FatLink.objects.values('creator_id')\
+    fleet_counts = FatLink.objects.select_related('creator_id')\
+                                   .values('creator_id__username')\
                                    .annotate(fleet_count=Count('id'))\
                                    .order_by('-fleet_count')
 
     for player in fleet_counts:
-        print(f"Creator ID: {player['creator_id']}, Fleets Created: {player['fleet_count']}")
+        print(f"Creator ID: {player['creator__username']}, Fleets Created: {player['fleet_count']}")
 
 # You can call this function in a view or another part of your application
 # For example, if you're doing it in a view:

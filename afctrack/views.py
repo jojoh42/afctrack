@@ -11,10 +11,11 @@ def index(request):
     Index view that displays fleet counts per player.
     """
     # Fetch fleet counts using a query similar to `get_fleet_counts`
-    fleet_counts = FatLink.objects.values('creator_id')\
-                                  .annotate(fleet_count=Count('id'))\
-                                  .order_by('-fleet_count')
-
+    fleet_counts = FatLink.objects.select_related('creator_id')\
+                                   .values('creator_id__username')\
+                                   .annotate(fleet_count=Count('id'))\
+                                   .order_by('-fleet_count')
+    
     # Prepare the context for rendering the template
     context = {
         "text": "Hello, World! 2",
