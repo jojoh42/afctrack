@@ -13,6 +13,35 @@
             {{ text }}
         </div>
     </div>
+
+    <!-- Display Fleet Counts -->
+    <div class="card card-info">
+        <div class="card-header">
+            <div class="card-title">Fleet Counts</div>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Creator ID</th>
+                        <th>Fleets Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in fleet_counts %}
+                        <tr>
+                            <td>{{ player.creator_id }}</td>
+                            <td>{{ player.fleet_count }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="2">No data available</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 {% endblock %}
 
 {% block extra_javascript %}
