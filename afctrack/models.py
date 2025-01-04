@@ -1,11 +1,7 @@
-"""
-App Models
-Create your models in here
-"""
-
 # Django
 from itertools import count
 from django.db import models
+from django.db.models import Count  # Import Count from django.db.models
 
 class General(models.Model):
     """Meta model for app permissions"""
@@ -27,8 +23,8 @@ class MonthlyFCPayment(models.Model):
     month = models.IntegerField(verbose_name="Taxed month", blank=False, default=0)
     year = models.IntegerField(verbose_name="Taxed year", blank=False, default=0)
     player_name = models.IntegerField(verbose_name="Player Name", blank=False)
-    payment_value = models.IntegerField(verbose_name="Payment Ammount", blank=False, default=0)
-    fleet_ammount = models.IntegerField(verbose_name="Fleet Ammount", blank=False, default=0)
+    payment_value = models.IntegerField(verbose_name="Payment Amount", blank=False, default=0)
+    fleet_amount = models.IntegerField(verbose_name="Fleet Amount", blank=False, default=0)
 
 class AtatFatlink(models.Model):
     creator_id = models.IntegerField(verbose_name="Creator ID")  # Player ID
@@ -39,7 +35,7 @@ class AtatFatlink(models.Model):
 
 # Get all the players (creator_id) and count the number of fleets they have created
 fleet_counts = AtatFatlink.objects.values('creator_id')\
-                                   .annotate(fleet_count=count('fleet_id'))\
+                                   .annotate(fleet_count=Count('fleet_id'))\
                                    .order_by('-fleet_count')
 
 # Print the results
