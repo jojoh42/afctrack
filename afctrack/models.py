@@ -1,14 +1,13 @@
-# Django
 from itertools import count
 from django.db import models
 from django.db.models import Count  # Import Count from django.db.models
+# Import the FatLink model from the afat project
+from afat.models import FatLink  # Correctly import FatLink model from the afat project
 
 class General(models.Model):
     """Meta model for app permissions"""
-
     class Meta:
         """Meta definitions"""
-
         managed = False
         default_permissions = ()
         permissions = (
@@ -26,18 +25,10 @@ class MonthlyFCPayment(models.Model):
     payment_value = models.IntegerField(verbose_name="Payment Amount", blank=False, default=0)
     fleet_amount = models.IntegerField(verbose_name="Fleet Amount", blank=False, default=0)
 
-class AtatFatlink(models.Model):
-    creator_id = models.IntegerField()
-    fleet_id = models.IntegerField()
-
-    class Meta:
-        db_table = 'afat_fatlink'   # Use a distinct table name
-
-
-# Get all the players (creator_id) and count the number of fleets they have created
-fleet_counts = AtatFatlink.objects.values('creator_id')\
-                                   .annotate(fleet_count=Count('id'))\
-                                   .order_by('-fleet_count')
+# Query directly from the FatLink model to get fleet counts for each creator_id
+fleet_counts = FatLink.objects.values('creator_id')\
+                               .annotate(fleet_count=Count('id'))\
+                               .order_by('-fleet_count')
 
 # Print the results
 for player in fleet_counts:
