@@ -17,7 +17,7 @@ def index(request: WSGIRequest) -> HttpResponse:
     
     # Query to get fleet counts per player
     fleet_counts = AtatFatlink.objects.values('creator_id')\
-                                       .annotate(fleet_count=Count('fleet_id'))\
+                                       .annotate(fleet_count=Count('id'))\
                                        .order_by('-fleet_count')
 
     # Pass the fleet counts to the context

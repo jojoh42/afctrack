@@ -35,7 +35,7 @@ class AtatFatlink(models.Model):
 
 # Get all the players (creator_id) and count the number of fleets they have created
 fleet_counts = AtatFatlink.objects.values('creator_id')\
-                                   .annotate(fleet_count=Count('fleet_id'))\
+                                   .annotate(fleet_count=Count('id'))\
                                    .order_by('-fleet_count')
 
 # Print the results
