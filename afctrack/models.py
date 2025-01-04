@@ -31,7 +31,7 @@ class AtatFatlink(models.Model):
     fleet_id = models.IntegerField()
 
     class Meta:
-        db_table = 'afctrack_atatfatlink'  # Use a distinct table name
+        db_table = 'afat_fatlink'   # Use a distinct table name
 
 
 # Get all the players (creator_id) and count the number of fleets they have created
