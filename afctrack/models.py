@@ -31,7 +31,7 @@ class AtatFatlink(models.Model):
     fleet_id = models.IntegerField(verbose_name="Fleet ID")
 
     class Meta:
-        db_table = 'atat_fatlink'  # Ensure this matches the actual table name in the database
+        db_table = 'afat_fatlink'  # Ensure this matches the actual table name in the database
 
 # Get all the players (creator_id) and count the number of fleets they have created
 fleet_counts = AtatFatlink.objects.values('creator_id')\
