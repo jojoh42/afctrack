@@ -23,7 +23,7 @@ class General(models.Model):
         verbose_name = "afctrack"
     
 class MonthlyFCPayment(models.Model):
-    character_id = models.IntegerField(verbose_name="Character ID", black=False)
+    character_id = models.IntegerField(verbose_name="Character ID", blank=False)
     month = models.IntegerField(verbose_name="Taxed month", blank=False, default=0)
     year = models.IntegerField(verbose_name="Taxed year", blank=False, default=0)
     player_name = models.IntegerField(verbose_name="Player Name", blank=False)
