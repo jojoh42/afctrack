@@ -1,34 +1,29 @@
-{% extends "base.html" %} <!-- Ensure you extend your base template -->
-{% load i18n %} <!-- Load internationalization for blocktrans -->
+{% extends 'example/base.html' %}
+{% load i18n %}
+{% load humanize %}
 
 {% block details %}
-    <!-- Headline Card -->
-    <div class="card card-primary">
-        <div class="card-header">
-            <div class="card-title">
-                {% blocktrans %}Headline{% endblocktrans %}
-            </div>
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+            <h3 class="panel-title">{% translate "Headline" %}</h3>
         </div>
-        <div class="card-body">
-            <p>{{ text }}</p>
+        <div class="panel-body" style="min-height: 100px;">
+            {{ text }}
         </div>
     </div>
 
-    <!-- Fleet Counts Card -->
-    <div class="card card-info mt-4">
-        <div class="card-header">
-            <div class="card-title">
-                {% blocktrans %}Fleet Counts{% endblocktrans %}
-            </div>
+    <!-- Fleet Counts Panel -->
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <h3 class="panel-title">{% translate "Fleet Counts" %}</h3>
         </div>
-        <div class="card-body">
-            <!-- Debugging Fleet Counts -->
+        <div class="panel-body">
             {% if fleet_counts %}
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th>{% blocktrans %}Creator ID{% endblocktrans %}</th>
-                            <th>{% blocktrans %}Fleets Created{% endblocktrans %}</th>
+                            <th>{% translate "Creator ID" %}</th>
+                            <th>{% translate "Fleets Created" %}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -37,20 +32,21 @@
                                 <td>{{ player.creator_id }}</td>
                                 <td>{{ player.fleet_count }}</td>
                             </tr>
-                        {% empty %}
-                            <tr>
-                                <td colspan="2" class="text-center">
-                                    {% blocktrans %}No fleet data available{% endblocktrans %}
-                                </td>
-                            </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             {% else %}
-                <p class="text-center text-muted">
-                    {% blocktrans %}No fleet data available{% endblocktrans %}
-                </p>
+                <p>{% translate "No fleet count data available." %}</p>
             {% endif %}
         </div>
     </div>
+{% endblock %}
+
+{% block extra_javascript %}
+{% endblock %}
+
+{% block extra_css %}
+{% endblock %}
+
+{% block extra_script %}
 {% endblock %}
