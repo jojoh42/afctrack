@@ -1,8 +1,6 @@
-from itertools import count
 from django.db import models
-from django.db.models import Count  # Import Count from django.db.models
-# Import the FatLink model from the afat project
-from afat.models import FatLink  # Correctly import FatLink model from the afat project
+from django.db.models import Count
+from afat.models import FatLink  # Import the FatLink model from afat
 
 class General(models.Model):
     """Meta model for app permissions"""
@@ -25,11 +23,18 @@ class MonthlyFCPayment(models.Model):
     payment_value = models.IntegerField(verbose_name="Payment Amount", blank=False, default=0)
     fleet_amount = models.IntegerField(verbose_name="Fleet Amount", blank=False, default=0)
 
-# Query directly from the FatLink model to get fleet counts for each creator_id
-fleet_counts = FatLink.objects.values('creator_id')\
-                               .annotate(fleet_count=Count('id'))\
-                               .order_by('-fleet_count')
+# Refactor the query into a function that is called after models are loaded
+def get_fleet_counts():
+    fleet_counts = FatLink.objects.values('creator_id')\
+                                   .annotate(fleet_count=Count('id'))\
+                                   .order_by('-fleet_count')
 
-# Print the results
-for player in fleet_counts:
-    print(f"Creator ID: {player['creator_id']}, Fleets Created: {player['fleet_count']}")
+    for player in fleet_counts:
+        print(f"Creator ID: {player['creator_id']}, Fleets Created: {player['fleet_count']}")
+
+# You can call this function in a view or another part of your application
+# For example, if you're doing it in a view:
+# from django.http import HttpResponse
+# def some_view(request):
+#     get_fleet_counts()
+#     return HttpResponse("Fleet counts displayed in the console")
