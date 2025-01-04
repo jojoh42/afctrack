@@ -1,72 +1,77 @@
 [build-system]
-build-backend = "hatchling.build"
-requires = [
-    "hatchling",
-]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
 
 [project]
-<<<<<<< HEAD
-name = "aa-example-plugin"
-description = "Example Plugin for Alliance Auth (GitHub Version)"
+name = "allianceauth-afctrack-plugin"
+dynamic = ["version", "description"]
 readme = "README.md"
-keywords = [
-    "allianceauth",
-    "example",
-=======
-name = "aa-afctrack-plugin"
-description = "afctrack Plugin for Alliance Auth (GitHub Version)"
-readme = "README.md"
-keywords = [
-    "allianceauth",
-    "afctrack",
->>>>>>> b17ad1b (updated)
-]
-license = { file = "LICENSE" }
+license = {file = "LICENSE"}
+requires-python = ">=3.8"
 authors = [
-    { name = "Peter Pfeufer", email = "develop@ppfeufer.de" },
+    { name = "John Doe", email = "john.doe@afctrack.com" },
 ]
-requires-python = ">=3.10"
 classifiers = [
     "Environment :: Web Environment",
     "Framework :: Django",
+    "Framework :: Django :: 4.0",
     "Framework :: Django :: 4.2",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
     "Topic :: Internet :: WWW/HTTP",
     "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
 ]
-dynamic = [
-    "version",
-]
 dependencies = [
-    "allianceauth>=4.3.1,<5",
+    "allianceauth>=3",
 ]
-<<<<<<< HEAD
-urls.Changelog = "https://github.com/ppfeufer/aa-example-plugin/blob/master/CHANGELOG.md"
-urls."Issue / Bug Reports" = "https://github.com/ppfeufer/aa-example-plugin/issues"
 
-[tool.hatch.version]
-path = "example/__init__.py"
 
-[tool.hatch.build]
-include = [
-    "/example",
-=======
-urls.Changelog = "https://github.com/ppfeufer/aa-afctrack-plugin/blob/master/CHANGELOG.md"
-urls."Issue / Bug Reports" = "https://github.com/ppfeufer/aa-afctrack-plugin/issues"
+[project.urls]
+Homepage = "https://gitlab.com/ErikKalkoken/allianceauth-afctrack-plugin"
+Documentation = "https://allianceauth-afctrack-plugin.readthedocs.io/en/latest/"
+Source = "https://gitlab.com/ErikKalkoken/allianceauth-afctrack-plugin"
+Changelog = "https://gitlab.com/ErikKalkoken/allianceauth-afctrack-plugin/-/blob/master/CHANGELOG.md"
+Tracker = "https://gitlab.com/ErikKalkoken/allianceauth-afctrack-plugin/-/issues"
 
-[tool.hatch.version]
-path = "afctrack/__init__.py"
+[tool.flit.module]
+name = "afctrack"
 
-[tool.hatch.build]
-include = [
-    "/afctrack",
->>>>>>> b17ad1b (updated)
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+sections = [
+    "FUTURE",
+    "STDLIB",
+    "THIRDPARTY",
+    "DJANGO",
+    "ALLIANCEAUTH",
+    "FIRSTPARTY",
+    "LOCALFOLDER"
+]
+known_allianceauth = ["allianceauth", "app_utils"]
+known_django = ["django", "django_webtest", "esi", "eveuniverse"]
+
+[tool.pylint.'MASTER']
+ignore-patterns = ["__init__.py", "auth_hooks.py", "apps.py", "admin.py"]
+ignore-paths = ["^.*/tests/.*$", "^.*/migrations/.*$"]
+
+[tool.pylint.'BASIC']
+good-names = ["i", "j", "k", "ex"]
+
+[tool.pylint.'FORMAT']
+max-line-length = 120
+
+[tool.pylint.'MESSAGES CONTROL']
+disable = [
+    "cyclic-import",
+    "fixme",
+    "import-outside-toplevel",
+    "imported-auth-user",
+    "too-few-public-methods",
 ]
