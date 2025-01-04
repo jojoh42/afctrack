@@ -1,4 +1,4 @@
 """Initialize the app"""
 
 __version__ = "0.0.9"
-__title__ = "afctrack"
+__title__ = "FC Activity Tracker"

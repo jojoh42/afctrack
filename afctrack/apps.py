@@ -10,6 +10,6 @@ from afctrack import __version__
 class afctrackConfig(AppConfig):
     """App Config"""
 
-    name = "afctrack"
-    label = "afctrack"
-    verbose_name = f"afctrack App v{__version__}"
+    name = "FC Activity Tracker"
+    label = "FC Activity Tracker"
+    verbose_name = f"FC Activity Tracker v{__version__}"
