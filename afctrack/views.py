@@ -7,11 +7,14 @@ from afat.models import FatLink  # Import the FatLink model from afat
 from django.conf import settings
 from datetime import datetime
 
-# Get payment amounts from settings (from app_settings.py)
-FC_Payment_Ammount = getattr(settings, "FC_Payment_Ammount", 200000000)
-FC_Payment_Ammount_Max = getattr(settings, "FC_Payment_Ammount_Max", 1000000000)
-JFC_Payment_Ammount = getattr(settings, "JFC_Payment_Ammount", 100000000)
-JFC_Payment_Ammount_Max = getattr(settings, "JFC_Payment_Ammount_Max", 500000000)
+
+# Doctrine points
+POINTS = {
+    'PCT/Roam': 0.5,
+    'STR': 1,
+    'Hive': 1.5
+}
+
 
 @login_required
 @permission_required("afctrack.fc_access", raise_exception=True)
@@ -31,10 +34,14 @@ def index(request):
         creator_id__in=fc_users_ids,
         created__month=current_month,
         created__year=current_year
-    ).values('creator_id__username')\
+    ).values('creator_id__username', 'fleet_type')\
      .annotate(fleet_count=Count('id'))\
      .order_by('-fleet_count')
+    
+    # Calculate the total score (points) for all fleets
+    total_score = 0
 
+    # Count the number of fleets per doctrine
     fleet_count_doctrine = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
         created__month=current_month,
@@ -43,42 +50,54 @@ def index(request):
      .annotate(doctrine_count=Count('id'))\
      .order_by('-doctrine_count')
 
+    # Count the number of fleets per fleet type
+    fleet_count_type = FatLink.objects.filter(
+        creator_id__in=fc_users_ids,
+        created__month=current_month,
+        created__year=current_year
+    ).values('fleet_type')\
+     .annotate(type_count=Count('id'))\
+     .order_by('-type_count')
+
     # Prepare the fleet data with payment information
     fleet_data = []
     for player in fleet_counts:
         player_name = player['creator_id__username']
         fleet_count = player['fleet_count']
-        
-        # Determine whether the user is an FC or JFC
-        user = User.objects.get(username=player_name)
-        if user.groups.filter(name="fc").exists():
-            base_payment = FC_Payment_Ammount
-            max_payment = FC_Payment_Ammount_Max
-        else:
-            base_payment = JFC_Payment_Ammount
-            max_payment = JFC_Payment_Ammount_Max
-        
-        # Calculate the payment amount per fleet
-        if fleet_count > 0:
-            payment_per_fleet = base_payment * fleet_count
-        else:
-            payment_per_fleet = 0
-        
-        # Ensure the payment amount doesn't exceed the max allowed
-        final_payment = min(payment_per_fleet, max_payment)
-        
+        fleet_type = player['fleet_type']
+
+        # Get points for the doctrine
+        fleet_points = POINTS.get(fleet_type, 0)
+
+        # Calculate the total score for this fleet
+        total_score += fleet_points
+
         # Add this information to the list
         fleet_data.append({
             'player_name': player_name,
             'fleet_count': fleet_count,
-            'payment_per_fleet': final_payment
+            'fleet_points': fleet_points
         })
+
+    # Fetch the budget from the request
+    budget = float(request.GET.get('budget', 3000000000))
+
+    # Calculate ISK per point if the total score is greater than 0
+    if total_score > 0:
+        isk_per_point = budget / total_score
+    else:
+        isk_per_point = 0
+    
+    # Assign payment to each player based on their points
+    for fleet in fleet_data:
+        fleet['payment'] = fleet['fleet_points'] * isk_per_point
 
     # Prepare the context for rendering the template
     context = {
         "fleet_data": fleet_data,  # Pass the fleet data to the template
-        "fleet_count_doctrine": fleet_count_doctrine
+        "fleet_count_doctrine": fleet_count_doctrine,  # Fleet count per doctrine
+        "fleet_count_type": fleet_count_type  # Fleet count per type
     }
 
     # Render the template with the context
-    return render(request, "afctrack/index.html", context)
+    return render(request, 'index.html', context)

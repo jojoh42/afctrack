@@ -9,7 +9,7 @@
             <h3 class="panel-title">{% translate "Fleet Counts" %}</h3>
         </div>
         <div class="panel-body">
-            {% if fleet_data %}
+            {% if player_payments %}
                 <table class="table table-striped">
                     <thead>
                         <tr>
@@ -19,11 +19,11 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for player in fleet_data %}
+                        {% for player in player_payments %}
                             <tr>
                                 <td>{{ player.player_name }}</td>
                                 <td>{{ player.fleet_count }}</td>
-                                <td>{{ player.payment_per_fleet }}</td>
+                                <td>{{ player.payment }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -59,6 +59,35 @@
                 </table>
             {% else %}
                 <p>{% translate "No doctrine count data available." %}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Fleet Type Panel -->
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <h3 class="panel-title">{% translate "Fleet Type" %}</h3>
+        </div>
+        <div class="panel-body">
+            {% if fleet_count_type %}
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>{% translate "Fleet Type" %}</th>
+                            <th>{% translate "Fleets of This Type" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fleet in fleet_count_type %}
+                            <tr>
+                                <td>{{ fleet.fleet_type }}</td>
+                                <td>{{ fleet.type_count }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>{% translate "No fleet type data available." %}</p>
             {% endif %}
         </div>
     </div>
