@@ -12,6 +12,10 @@ JFC_Payment_Ammount = getattr(settings, "JFC_Payment_Ammount", 100000000)
 JFC_Payment_Ammount_Max = getattr(settings, "JFC_Payment_Ammount_Max", 500000000)
 
 def get_fleet_counts():
+    """
+    Get fleet counts and calculate the payment for each user.
+    This function prints the result to the console for each user.
+    """
     # Get the current month and year
     current_month = datetime.now().month
     current_year = datetime.now().year
@@ -22,12 +26,13 @@ def get_fleet_counts():
     # Filter FatLink by those users and the current month/year
     fleet_counts = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
-        month=current_month,
-        year=current_year
+        created__month=current_month,
+        created__year=current_year
     ).values('creator_id__username')\
      .annotate(fleet_count=Count('id'))\
      .order_by('-fleet_count')
 
+    # Calculate payment for each user
     for player in fleet_counts:
         player_name = player['creator_id__username']
         fleet_count = player['fleet_count']
@@ -54,28 +59,34 @@ def get_fleet_counts():
 
 
 def get_fleet_count_doctrine():
+    """
+    Get doctrine counts for the current month/year and print the results to the console.
+    """
     # Get the current month and year
     current_month = datetime.now().month
     current_year = datetime.now().year
 
+    # Get the primary keys of users in the "jfc" or "fc" groups
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
 
     # Filter FatLink by those users and the current month/year
     fleet_count_doctrine = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
-        month=current_month,
-        year=current_year
+        created__month=current_month,
+        created__year=current_year
     ).values('doctrine')\
      .annotate(doctrine_count=Count('id'))\
      .order_by('-doctrine_count')
 
+    # Print doctrine data
     for doctrine in fleet_count_doctrine:
         print(f"Doctrine Type: {doctrine['doctrine']}, Doctrines Used: {doctrine['doctrine_count']}")
 
+# Example view function calling these methods:
+from django.http import HttpResponse
 
-# You can call this function in a view or another part of your application
-# For example, if you're doing it in a view:
-# from django.http import HttpResponse
-# def some_view(request):
-#     get_fleet_counts()
-#     return HttpResponse("Fleet counts displayed in the console")
+def some_view(request):
+    # Call the functions to display the data in the console
+    get_fleet_counts()
+    get_fleet_count_doctrine()
+    return HttpResponse("Fleet counts and doctrine data displayed in the console.")

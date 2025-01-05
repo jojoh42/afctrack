@@ -29,16 +29,16 @@ def index(request):
     # Filter FatLink by those users and the current month/year
     fleet_counts = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
-        month=current_month,
-        year=current_year
+        created__month=current_month,
+        created__year=current_year
     ).values('creator_id__username')\
      .annotate(fleet_count=Count('id'))\
      .order_by('-fleet_count')
 
     fleet_count_doctrine = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
-        month=current_month,
-        year=current_year
+        created__month=current_month,
+        created__year=current_year
     ).values('doctrine')\
      .annotate(doctrine_count=Count('id'))\
      .order_by('-doctrine_count')
