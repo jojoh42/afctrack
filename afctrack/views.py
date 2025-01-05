@@ -15,11 +15,14 @@ def index(request):
                                    .values('creator_id__username')\
                                    .annotate(fleet_count=Count('id'))\
                                    .order_by('-fleet_count')
+    fleet_count_doctrine = FatLink.objects.select_related('doctrine')\
+                                          .annotate(doctrine_count=Count('id'))\
+                                          .order_by('-doctrine_count')
     
     # Prepare the context for rendering the template
     context = {
-        "text": "Hello, World! 2",
-        "fleet_counts": fleet_counts  # Pass the fleet counts to the template
+        "fleet_counts": fleet_counts,  # Pass the fleet counts to the template
+        "fleet_count_doctrine": fleet_count_doctrine
     }
 
     # Render the template with the context

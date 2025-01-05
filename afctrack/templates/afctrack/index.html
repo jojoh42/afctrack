@@ -3,15 +3,6 @@
 {% load humanize %}
 
 {% block details %}
-    <div class="panel panel-primary">
-        <div class="panel-heading">
-            <h3 class="panel-title">{% translate "Headline" %}</h3>
-        </div>
-        <div class="panel-body" style="min-height: 100px;">
-            {{ text }}
-        </div>
-    </div>
-
     <!-- Fleet Counts Panel -->
     <div class="panel panel-info">
         <div class="panel-heading">
@@ -22,8 +13,9 @@
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th>{% translate "Creator ID" %}</th>
+                            <th>{% translate "Player Name" %}</th>
                             <th>{% translate "Fleets Created" %}</th>
+                            <th>{% translate "Payment Amount" %}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -31,6 +23,7 @@
                             <tr>
                                 <td>{{ player.creator_id__username }}</td>
                                 <td>{{ player.fleet_count }}</td>
+                                <th>{{ player.payment_amount }}</th>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -40,6 +33,34 @@
             {% endif %}
         </div>
     </div>
+        <!-- Doctrine Type Panel -->
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h3 class="panel-title">{% translate "Doctrine Type" %}</h3>
+            </div>
+            <div class="panel-body">
+                {% if fleet_count_doctrine %}
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>{% translate "Doctrine Type" %}</th>
+                                <th>{% translate "Doctrines Used" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doctrine in fleet_count_doctrine %}
+                                <tr>
+                                    <td>{{ doctrine.doctrine }}</td>
+                                    <td>{{ doctrine.doctrine_count }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>{% translate "No doctrine count data available." %}</p>
+                {% endif %}
+            </div>
+        </div>
 {% endblock %}
 
 {% block extra_javascript %}

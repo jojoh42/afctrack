@@ -31,8 +31,16 @@ def get_fleet_counts():
                                    .order_by('-fleet_count')
 
     for player in fleet_counts:
-        print(f"Creator ID: {player['creator_id__username']}, Fleets Created: {player['fleet_count']}")
+        print(f"Player Name: {player['creator_id__username']}, Fleets Created: {player['fleet_count']}, Payment Amount: {player['payment_amount']}")
 
+
+def get_fleet_count_doctrine():
+    fleet_count_doctrine = FatLink.objects.select_related('doctrine')\
+                                          .annotate(doctrine_count=Count('id'))\
+                                          .order_by('-doctrine_count')
+
+    for  doctrine in fleet_count_doctrine:
+        print(f"Doctrine Type: {doctrine['doctrine']}, Doctrines Used: {doctrine['doctrine_count']}")
 # You can call this function in a view or another part of your application
 # For example, if you're doing it in a view:
 # from django.http import HttpResponse
