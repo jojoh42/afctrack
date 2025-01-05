@@ -1,5 +1,6 @@
 from django.db import models
 from django.db.models import Count
+from django.contrib.auth.models import User, Group
 from afat.models import FatLink  # Import the FatLink model from afat
 
 class General(models.Model):
@@ -25,7 +26,8 @@ class MonthlyFCPayment(models.Model):
 
 # Refactor the query into a function that is called after models are loaded
 def get_fleet_counts():
-    fleet_counts = FatLink.objects.select_related('creator_id')\
+    fc_users = User.objects.filter(groups__name__iexact="jfc") | User.objects.filter(groups__name__iexact="fc")
+    fleet_counts = FatLink.objects.filter(creator_id__in=fc_users)\
                                    .values('creator_id__username')\
                                    .annotate(fleet_count=Count('id'))\
                                    .order_by('-fleet_count')
