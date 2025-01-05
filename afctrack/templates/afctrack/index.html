@@ -22,14 +22,14 @@
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th>{% translate "Creator ID" %}</th>
+                            <th>{% translate "charakter Name %}</th>
                             <th>{% translate "Fleets Created" %}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for player in fleet_counts %}
                             <tr>
-                                <td>{{ player.creator_id }}</td>
+                                <td>{{ player.creator_id__username }}</td>
                                 <td>{{ player.fleet_count }}</td>
                             </tr>
                         {% endfor %}
