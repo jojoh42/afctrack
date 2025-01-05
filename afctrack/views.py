@@ -9,7 +9,7 @@ from datetime import datetime
 # Doctrine points
 POINTS = {
     'PCT/Roam': 0.5,
-    'STR': 1,
+    'Strat OP': 1,
     'Hive': 1.5
 }
 
