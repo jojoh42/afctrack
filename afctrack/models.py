@@ -35,12 +35,13 @@ def get_fleet_counts():
 
 
 def get_fleet_count_doctrine():
-    fleet_count_doctrine = FatLink.objects.select_related('doctrine')\
+    fleet_count_doctrine = FatLink.objects.values('doctrine')\
                                           .annotate(doctrine_count=Count('id'))\
                                           .order_by('-doctrine_count')
 
-    for  doctrine in fleet_count_doctrine:
+    for doctrine in fleet_count_doctrine:
         print(f"Doctrine Type: {doctrine['doctrine']}, Doctrines Used: {doctrine['doctrine_count']}")
+
 # You can call this function in a view or another part of your application
 # For example, if you're doing it in a view:
 # from django.http import HttpResponse
