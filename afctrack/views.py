@@ -60,7 +60,7 @@ def index(request):
         
         # Calculate the payment amount per fleet
         if fleet_count > 0:
-            payment_per_fleet = base_payment / fleet_count
+            payment_per_fleet = base_payment * fleet_count
         else:
             payment_per_fleet = 0
         
