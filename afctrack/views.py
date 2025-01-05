@@ -100,4 +100,4 @@ def index(request):
     }
 
     # Render the template with the context
-    return render(request, 'index.html', context)
+    return render(request, 'afctrack/index.html', context)
