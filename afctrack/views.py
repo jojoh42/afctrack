@@ -15,7 +15,7 @@ def index(request):
                                    .values('creator_id__username')\
                                    .annotate(fleet_count=Count('id'))\
                                    .order_by('-fleet_count')
-    fleet_count_doctrine = FatLink.objects.select_related('doctrine')\
+    fleet_count_doctrine = FatLink.objects.values('doctrine')\
                                           .annotate(doctrine_count=Count('id'))\
                                           .order_by('-doctrine_count')
     
