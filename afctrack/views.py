@@ -33,32 +33,38 @@ def index(request):
         created__year=current_year
     ).values('creator_id__username', 'fleet_type')\
      .annotate(fleet_count=Count('id'))\
-     .order_by('-fleet_count')
-    
-    # Calculate the total score (points) for all fleets
-    total_score = 0
+     .order_by('creator_id__username', 'fleet_type')  # Group by player and fleet type
 
-    # Prepare the fleet data with payment information
-    fleet_data = []
+    # Prepare the fleet data with aggregated information for each player
+    player_data = {}
+
     for player in fleet_counts:
         player_name = player['creator_id__username']
-        fleet_count = player['fleet_count']
         fleet_type = player['fleet_type']
+        fleet_count = player['fleet_count']
 
         # Get points for the doctrine
         fleet_points = POINTS.get(fleet_type, 0)
 
-        # Calculate the total score for this fleet
-        total_score += fleet_points
+        if player_name not in player_data:
+            player_data[player_name] = {
+                'total_fleet_count': 0,
+                'total_fleet_points': 0,
+                'fleet_count_by_type': {},  # Store fleet counts by type for display
+            }
 
-        # Add this information to the list
-        fleet_data.append({
-            'player_name': player_name,
-            'fleet_count': fleet_count,
-            'fleet_points': fleet_points
-        })
+        # Accumulate fleet counts and points for the player
+        player_data[player_name]['total_fleet_count'] += fleet_count
+        player_data[player_name]['total_fleet_points'] += fleet_points * fleet_count
 
-    # Fetch the budget from the request
+        # Accumulate fleet counts by type for displaying in the template
+        if fleet_type not in player_data[player_name]['fleet_count_by_type']:
+            player_data[player_name]['fleet_count_by_type'][fleet_type] = 0
+        player_data[player_name]['fleet_count_by_type'][fleet_type] += fleet_count
+
+    # Now that we have the total fleet counts and points for each player,
+    # calculate payments for each player.
+    total_score = sum(player['total_fleet_points'] for player in player_data.values())
     budget = float(request.GET.get('budget', 3000000000))
 
     # Calculate ISK per point if the total score is greater than 0
@@ -66,12 +72,12 @@ def index(request):
         isk_per_point = budget / total_score
     else:
         isk_per_point = 0
-    
-    # Assign payment to each player based on their points
-    for fleet in fleet_data:
-        fleet['payment'] = fleet['fleet_points'] * isk_per_point
 
-    # Get fleet count per doctrine and type
+    # Calculate payment for each player
+    for player_name, data in player_data.items():
+        data['payment'] = data['total_fleet_points'] * isk_per_point
+
+    # Get fleet count per doctrine and type for displaying in the template
     fleet_count_doctrine = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
         created__month=current_month,
@@ -90,7 +96,7 @@ def index(request):
 
     # Prepare the context for rendering the template
     context = {
-        "fleet_data": fleet_data,  # Pass the fleet data to the template
+        "player_data": player_data,  # Pass the aggregated player data to the template
         "fleet_count_doctrine": fleet_count_doctrine,  # Fleet count per doctrine
         "fleet_count_type": fleet_count_type  # Fleet count per type
     }

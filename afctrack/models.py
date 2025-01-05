@@ -1,6 +1,6 @@
 from django.db import models
 from django.db.models import Count
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User
 from afat.models import FatLink
 from django.conf import settings
 from datetime import datetime
@@ -50,10 +50,7 @@ def get_fleet_counts_and_payment():
             max_payment = JFC_Payment_Ammount_Max
         
         # Calculate the payment amount per fleet
-        if fleet_count > 0:
-            payment_per_fleet = base_payment * fleet_count
-        else:
-            payment_per_fleet = 0
+        payment_per_fleet = base_payment * fleet_count if fleet_count > 0 else 0
         
         # Ensure the payment amount doesn't exceed the max allowed
         final_payment = min(payment_per_fleet, max_payment)
@@ -88,7 +85,6 @@ def get_fleet_count_by_doctrine():
      .annotate(doctrine_count=Count('id'))\
      .order_by('-doctrine_count')
 
-    # Return the doctrine count data
     return fleet_count_doctrine
 
 
@@ -112,5 +108,4 @@ def get_fleet_count_by_type():
      .annotate(type_count=Count('id'))\
      .order_by('-type_count')
 
-    # Return the fleet type count data
     return fleet_count_type
