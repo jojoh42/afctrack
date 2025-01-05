@@ -26,14 +26,18 @@ class MonthlyFCPayment(models.Model):
 
 # Refactor the query into a function that is called after models are loaded
 def get_fleet_counts():
-    fc_users = User.objects.filter(groups__name__iexact="jfc") | User.objects.filter(groups__name__iexact="fc")
-    fleet_counts = FatLink.objects.filter(creator_id__in=fc_users)\
+    # Get the primary keys of users in the "jfc" or "fc" groups
+    fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
+
+    # Filter FatLink by those users
+    fleet_counts = FatLink.objects.filter(creator_id__in=fc_users_ids)\
                                    .values('creator_id__username')\
                                    .annotate(fleet_count=Count('id'))\
                                    .order_by('-fleet_count')
 
     for player in fleet_counts:
-        print(f"Player Name: {player['creator_id__username']}, Fleets Created: {player['fleet_count']}, Payment Amount: {player['payment_amount']}")
+        print(f"Player Name: {player['creator_id__username']}, Fleets Created: {player['fleet_count']}")
+
 
 
 def get_fleet_count_doctrine():

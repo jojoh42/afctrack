@@ -11,9 +11,10 @@ def index(request):
     """
     Index view that displays fleet counts per player.
     """
-    # Fetch fleet counts using a query similar to `get_fleet_counts`
-    fc_users = User.objects.filter(groups__name__iexact="jfc") | User.objects.filter(groups__name__iexact="fc")
-    fleet_counts = FatLink.objects.filter(creator_id__in=fc_users)\
+    fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
+
+    # Filter FatLink by those users
+    fleet_counts = FatLink.objects.filter(creator_id__in=fc_users_ids)\
                                    .values('creator_id__username')\
                                    .annotate(fleet_count=Count('id'))\
                                    .order_by('-fleet_count')
