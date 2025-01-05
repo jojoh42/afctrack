@@ -9,7 +9,7 @@
             <h3 class="panel-title">{% translate "Fleet Counts" %}</h3>
         </div>
         <div class="panel-body">
-            {% if player_payments %}
+            {% if fleet_data %}
                 <table class="table table-striped">
                     <thead>
                         <tr>
@@ -19,11 +19,11 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for player in player_payments %}
+                        {% for player in fleet_data %}
                             <tr>
                                 <td>{{ player.player_name }}</td>
                                 <td>{{ player.fleet_count }}</td>
-                                <td>{{ player.payment }}</td>
+                                <td>{{ player.payment }}</td>  <!-- Display payment -->
                             </tr>
                         {% endfor %}
                     </tbody>

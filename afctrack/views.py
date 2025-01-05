@@ -1,12 +1,10 @@
 from django.shortcuts import render
 from django.db.models import Count
 from django.contrib.auth.decorators import login_required, permission_required
-from django.http import HttpResponse
-from django.contrib.auth.models import User, Group
-from afat.models import FatLink  # Import the FatLink model from afat
+from django.contrib.auth.models import User
+from afat.models import FatLink
 from django.conf import settings
 from datetime import datetime
-
 
 # Doctrine points
 POINTS = {
@@ -14,7 +12,6 @@ POINTS = {
     'STR': 1,
     'Hive': 1.5
 }
-
 
 @login_required
 @permission_required("afctrack.fc_access", raise_exception=True)
@@ -40,24 +37,6 @@ def index(request):
     
     # Calculate the total score (points) for all fleets
     total_score = 0
-
-    # Count the number of fleets per doctrine
-    fleet_count_doctrine = FatLink.objects.filter(
-        creator_id__in=fc_users_ids,
-        created__month=current_month,
-        created__year=current_year
-    ).values('doctrine')\
-     .annotate(doctrine_count=Count('id'))\
-     .order_by('-doctrine_count')
-
-    # Count the number of fleets per fleet type
-    fleet_count_type = FatLink.objects.filter(
-        creator_id__in=fc_users_ids,
-        created__month=current_month,
-        created__year=current_year
-    ).values('fleet_type')\
-     .annotate(type_count=Count('id'))\
-     .order_by('-type_count')
 
     # Prepare the fleet data with payment information
     fleet_data = []
@@ -91,6 +70,23 @@ def index(request):
     # Assign payment to each player based on their points
     for fleet in fleet_data:
         fleet['payment'] = fleet['fleet_points'] * isk_per_point
+
+    # Get fleet count per doctrine and type
+    fleet_count_doctrine = FatLink.objects.filter(
+        creator_id__in=fc_users_ids,
+        created__month=current_month,
+        created__year=current_year
+    ).values('doctrine')\
+     .annotate(doctrine_count=Count('id'))\
+     .order_by('-doctrine_count')
+
+    fleet_count_type = FatLink.objects.filter(
+        creator_id__in=fc_users_ids,
+        created__month=current_month,
+        created__year=current_year
+    ).values('fleet_type')\
+     .annotate(type_count=Count('id'))\
+     .order_by('-type_count')
 
     # Prepare the context for rendering the template
     context = {
