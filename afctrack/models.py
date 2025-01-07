@@ -59,14 +59,16 @@ def get_fleet_counts_and_payment(budget):
     # Calculate ISK per point if the total score is greater than 0
     if total_fleet_points > 0:
         isk_per_point = budget / total_fleet_points
+        round_isk_per_point = round(isk_per_point)
     else:
         isk_per_point = 0
+        round_isk_per_point = round(isk_per_point)
 
     # Calculate the payment for each player
     player_payments = []
     for player_name, data in player_data.items():
         # Calculate the payment based on the doctrine points
-        payment = data['total_fleet_points'] * isk_per_point
+        payment = data['total_fleet_points'] * round_isk_per_point
         player_payments.append({
             'player_name': player_name,
             'fleet_count': data['total_fleet_count'],

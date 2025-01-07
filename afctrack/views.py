@@ -66,12 +66,14 @@ def index(request):
     # Calculate ISK per point if the total score is greater than 0
     if total_score > 0:
         isk_per_point = budget / total_score
+        round_isk_per_point = round(isk_per_point)
     else:
         isk_per_point = 0
+        round_isk_per_point = round(isk_per_point)
 
     # Calculate payment for each player
     for player_name, data in player_data.items():
-        data['payment'] = data['total_fleet_points'] * isk_per_point
+        data['payment'] = data['total_fleet_points'] * round_isk_per_point
 
     # Prepare the context for rendering the template
     context = {
