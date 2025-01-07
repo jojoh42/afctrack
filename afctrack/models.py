@@ -5,12 +5,6 @@ from afat.models import FatLink
 from django.conf import settings
 from datetime import datetime
 
-# Get payment amounts from settings (from app_settings.py)
-FC_Payment_Ammount = getattr(settings, "FC_Payment_Ammount", 200000000)
-FC_Payment_Ammount_Max = getattr(settings, "FC_Payment_Ammount_Max", 1000000000)
-JFC_Payment_Ammount = getattr(settings, "JFC_Payment_Ammount", 100000000)
-JFC_Payment_Ammount_Max = getattr(settings, "JFC_Payment_Ammount_Max", 500000000)
-
 # Doctrine points
 POINTS = {
     'PCT/Roam': 0.5,
