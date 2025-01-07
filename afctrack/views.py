@@ -61,7 +61,7 @@ def index(request):
     # Now that we have the total fleet counts and points for each player, 
     # calculate payments for each player.
     total_score = sum(player['total_fleet_points'] for player in player_data.values())
-    budget = float(request.GET.get('budget', 3000000000))
+    budget = int(request.GET.get('budget', 3000000000))
 
     # Calculate ISK per point if the total score is greater than 0
     if total_score > 0:
@@ -69,6 +69,7 @@ def index(request):
         round_isk_per_point = round(isk_per_point)
     else:
         isk_per_point = 0
+        round_isk_per_point = round(isk_per_point)
 
     # Calculate payment for each player
     for player_name, data in player_data.items():
