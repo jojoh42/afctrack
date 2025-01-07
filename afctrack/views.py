@@ -31,7 +31,7 @@ def index(request):
         creator_id__in=fc_users_ids,
         created__month=current_month,
         created__year=current_year
-    ).values('creator_id__username')\
+    ).values('creator__username')\
      .annotate(fleet_count=Count('id'))\
      .order_by('-fleet_count')
 
