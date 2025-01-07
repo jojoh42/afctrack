@@ -1,103 +1,75 @@
-{% extends 'afctrack/base.html' %}
-{% load i18n %}
-{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fleet Counts</title>
+</head>
+<body>
+    <h1>Fleet Counts</h1>
+    {% if fleet_counts %}
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Player</th>
+                <th>Fleet Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fleet in fleet_counts %}
+            <tr>
+                <td>{{ fleet.creator_id__username }}</td>
+                <td>{{ fleet.fleet_count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No fleet count data available.</p>
+    {% endif %}
 
-{% block details %}
-    <!-- Fleet Counts Panel -->
-    <div class="panel panel-info">
-        <div class="panel-heading">
-            <h3 class="panel-title">{% translate "Fleet Counts" %}</h3>
-        </div>
-        <div class="panel-body">
-            {% if fleet_data %}
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>{% translate "Player Name" %}</th>
-                            <th>{% translate "Fleets Created" %}</th>
-                            <th>{% translate "Payment Amount" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for player in fleet_data %}
-                            <tr>
-                                <td>{{ player.player_name }}</td>
-                                <td>{{ player.fleet_count }}</td>
-                                <td>{{ player.payment }}</td>  <!-- Display payment -->
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p>{% translate "No fleet count data available." %}</p>
-            {% endif %}
-        </div>
-    </div>
+    <h2>Doctrine Type</h2>
+    {% if doctrine_counts %}
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Doctrine</th>
+                <th>Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for doctrine in doctrine_counts %}
+            <tr>
+                <td>{{ doctrine.doctrine }}</td>
+                <td>{{ doctrine.doctrine_count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No doctrine data available.</p>
+    {% endif %}
 
-    <!-- Doctrine Type Panel -->
-    <div class="panel panel-info">
-        <div class="panel-heading">
-            <h3 class="panel-title">{% translate "Doctrine Type" %}</h3>
-        </div>
-        <div class="panel-body">
-            {% if fleet_count_doctrine %}
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>{% translate "Doctrine Type" %}</th>
-                            <th>{% translate "Doctrines Used" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for doctrine in fleet_count_doctrine %}
-                            <tr>
-                                <td>{{ doctrine.doctrine }}</td>
-                                <td>{{ doctrine.doctrine_count }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p>{% translate "No doctrine count data available." %}</p>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Fleet Type Panel  -->
-    <div class="panel panel-info">
-        <div class="panel-heading">
-            <h3 class="panel-title">{% translate "Fleet Type" %}</h3>
-        </div>
-        <div class="panel-body">
-            {% if fleet_count_type %}
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>{% translate "Fleet Type" %}</th>
-                            <th>{% translate "Fleets of This Type" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for fleet in fleet_count_type %}
-                            <tr>
-                                <td>{{ fleet.fleet_type }}</td>
-                                <td>{{ fleet.type_count }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p>{% translate "No fleet type data available." %}</p>
-            {% endif %}
-        </div>
-    </div>
-{% endblock %}
-
-{% block extra_javascript %}
-{% endblock %}
-
-{% block extra_css %}
-{% endblock %}
-
-{% block extra_script %}
-{% endblock %}
+    <h2>Fleet Type</h2>
+    {% if type_counts %}
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Fleet Type</th>
+                <th>Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fleet_type in type_counts %}
+            <tr>
+                <td>{{ fleet_type.fleet_type }}</td>
+                <td>{{ fleet_type.type_count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No fleet type data available.</p>
+    {% endif %}
+</body>
+</html>
