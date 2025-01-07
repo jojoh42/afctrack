@@ -9,98 +9,28 @@
             <h3 class="panel-title">{% translate "Fleet Counts" %}</h3>
         </div>
         <div class="panel-body">
-            {% if fleet_data %}
+            {% if player_data %}
                 <table class="table table-striped">
                     <thead>
                         <tr>
                             <th>{% translate "Player Name" %}</th>
-                            <th>{% translate "Fleets Created" %}</th>
+                            <th>{% translate "Total Fleets Created" %}</th>
                             <th>{% translate "Payment Amount" %}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for player in fleet_data %}
+                        {% for player_name, data in player_data.items %}
                             <tr>
-                                <td>{{ player.player_name }}</td>
-                                <td>{{ player.fleet_count|intcomma }}</td> <!-- Added comma for better readability -->
-                                <td>{{ player.payment|intcomma }} ISK</td> <!-- Added comma and ISK suffix -->
+                                <td>{{ player_name }}</td>
+                                <td>{{ data.total_fleet_count }}</td>
+                                <td>{{ data.payment }}</td>  <!-- Display payment -->
                             </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             {% else %}
-                <p class="text-muted">{% translate "No fleet count data available." %}</p>
+                <p>{% translate "No fleet count data available." %}</p>
             {% endif %}
         </div>
     </div>
-
-    <!-- Doctrine Type Panel -->
-    <div class="panel panel-info">
-        <div class="panel-heading">
-            <h3 class="panel-title">{% translate "Doctrine Type" %}</h3>
-        </div>
-        <div class="panel-body">
-            {% if fleet_count_doctrine %}
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>{% translate "Doctrine Type" %}</th>
-                            <th>{% translate "Doctrines Used" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for doctrine in fleet_count_doctrine %}
-                            <tr>
-                                <td>{{ doctrine.doctrine }}</td>
-                                <td>{{ doctrine.doctrine_count|intcomma }}</td> <!-- Added comma -->
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p class="text-muted">{% translate "No doctrine count data available." %}</p>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Fleet Type Panel -->
-    <div class="panel panel-info">
-        <div class="panel-heading">
-            <h3 class="panel-title">{% translate "Fleet Type" %}</h3>
-        </div>
-        <div class="panel-body">
-            {% if fleet_count_type %}
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>{% translate "Fleet Type" %}</th>
-                            <th>{% translate "Fleets of This Type" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for fleet in fleet_count_type %}
-                            <tr>
-                                <td>{{ fleet.fleet_type }}</td>
-                                <td>{{ fleet.type_count|intcomma }}</td> <!-- Added comma -->
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p class="text-muted">{% translate "No fleet type data available." %}</p>
-            {% endif %}
-        </div>
-    </div>
-{% endblock %}
-
-{% block extra_javascript %}
-<!-- You can add custom JavaScript here -->
-{% endblock %}
-
-{% block extra_css %}
-<!-- You can add custom CSS styles here -->
-{% endblock %}
-
-{% block extra_script %}
-<!-- You can add additional script elements here -->
 {% endblock %}
