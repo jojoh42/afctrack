@@ -66,7 +66,7 @@ def index(request):
     # Calculate ISK per point if the total score is greater than 0
     if total_score > 0:
         isk_per_point = budget / total_score
-        round_isk_per_point = round(isk_per_point, 2)
+        round_isk_per_point = round(isk_per_point)
     else:
         isk_per_point = 0
 
