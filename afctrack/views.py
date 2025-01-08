@@ -84,6 +84,27 @@ def get_fleet_counts_and_payment(budget, selected_month, selected_year):
 
     return player_payments
 
+
+def get_doctrine_count(selected_month, selected_year):
+    """
+    Get doctrine counts for the selected month and year.
+    Returns a list of dictionaries with doctrine names and their counts.
+    """
+    # Get the primary keys of users in the "jfc" or "fc" groups
+    fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
+
+    # Filter FatLink by those users and the selected month/year
+    doctrine_counts = FatLink.objects.filter(
+        creator_id__in=fc_users_ids,
+        created__month=selected_month,
+        created__year=selected_year
+    ).values('doctrine')\
+     .annotate(doctrine_count=Count('id'))\
+     .order_by('-doctrine_count')
+
+    return doctrine_counts
+
+
 def index(request):
     # Get the current month and year
     current_month = datetime.now().month
@@ -118,6 +139,7 @@ def index(request):
 
     return render(request, 'afctrack/index.html', context)
 
+
 def doctrine_amount(request):
     # Get the current month and year
     current_month = datetime.now().month
@@ -133,20 +155,17 @@ def doctrine_amount(request):
     # Create a list of years (current year and previous 5 years, for example)
     available_years = list(range(current_year - 5, current_year + 1))
 
-    # Get the budget from GET parameters (default to 3 billion ISK)
-    budget = int(request.GET.get('budget', 3000000000))
-
-    # Get the fleet counts and payments based on the selected month, year, and budget
-    player_payments = get_fleet_counts_and_payment(budget, selected_month, selected_year)
+    # Fetch doctrine counts for the selected month and year
+    doctrine_counts = get_doctrine_count(selected_month, selected_year)
 
     # Pass data to the template
     context = {
         'month_name': calendar.month_name[selected_month],
         'available_months': available_months,  # List of months
         'available_years': available_years,    # List of years
-        'player_payments': player_payments,
-        'budget': budget,
-        'selected_month': selected_month,  # Ensure selected month is highlighted
-        'selected_year': selected_year,    # Ensure selected year is highlighted
+        'doctrine_counts': doctrine_counts,    # Doctrine count data
+        'selected_month': selected_month,      # Ensure selected month is highlighted
+        'selected_year': selected_year,        # Ensure selected year is highlighted
     }
-    return render(request, "afctrack/doctrine_amount.html")
+
+    return render(request, "afctrack/doctrine_amount.html", context)

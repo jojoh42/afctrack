@@ -3,14 +3,14 @@
 {% load humanize %}
 
 {% block details %}
-<!-- Fleet Counts Panel -->
+<!-- Doctrine Counts Panel -->
 <div class="panel panel-info">
     <div class="panel-heading">
-        <h3 class="panel-title">{% translate "Fleet Counts" %}</h3>
+        <h3 class="panel-title">{% translate "Doctrine Counts" %}</h3>
     </div>
     <div class="panel-body">
-        <!-- Budget and Date Selection Form -->
-        <form method="get" id="budget-form">
+        <!-- Date Selection Form -->
+        <form method="get" id="doctrine-form">
             <!-- Month Selector -->
             <div class="form-group">
                 <label for="month">{% translate "Month" %}:</label>
@@ -41,29 +41,25 @@
         </form>
         <hr />
 
-        {% if player_payments %}
+        {% if doctrine_counts %}
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th>{% translate "Player Name" %}</th>
-                        <th>{% translate "Total Fleets Created" %}</th>
-                        <th>{% translate "Average Participants" %}</th>
-                        <th>{% translate "Payment Amount" %}</th>
+                        <th>{% translate "Doctrine" %}</th>
+                        <th>{% translate "Count" %}</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for player in player_payments %}
+                    {% for doctrine in doctrine_counts %}
                         <tr>
-                            <td>{{ player.player_name }}</td>
-                            <td>{{ player.fleet_count }}</td>
-                            <td>{{ player.avg_participants|floatformat:1 }}</td> <!-- Display avg participants -->
-                            <td>{{ player.payment|intcomma }}</td> <!-- Format payment -->
+                            <td>{{ doctrine.doctrine }}</td>
+                            <td>{{ doctrine.doctrine_count|intcomma }}</td> <!-- Format count -->
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
         {% else %}
-            <p>{% translate "No fleet count data available." %}</p>
+            <p>{% translate "No doctrine count data available." %}</p>
         {% endif %}
     </div>
 </div>
