@@ -1,54 +1,84 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Fleet Tracker</title>
-</head>
-<body>
-    <h1>Fleet Tracker</h1>
+{% extends 'afctrack/base.html' %}
+{% load i18n %}
+{% load humanize %}
 
-    <!-- Month and Year Selector -->
-    <form method="get" action="{% url 'index' %}">
-        <label for="month">Select Month:</label>
-        <select name="month" id="month">
-            {% for month in available_months %}
-                <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>
-                    {{ month }}
-                </option>
-            {% endfor %}
-        </select>
+{% block details %}
+<!-- Fleet Counts Panel -->
+<div class="panel panel-info">
+    <div class="panel-heading">
+        <h3 class="panel-title">{% translate "Fleet Counts" %}</h3>
+    </div>
+    <div class="panel-body">
+        <!-- Budget and Date Selection Form -->
+        <form method="get" id="budget-form">
+            <div class="form-group">
+                <label for="budget">{% translate "Budget (ISK)" %}:</label>
+                <input
+                    type="number"
+                    id="budget"
+                    name="budget"
+                    value="{{ budget|default:3000000000 }}"  <!-- Default budget value -->
+                    min="0"
+                    step="1"
+                    class="form-control"
+                    required
+                />
+            </div>
 
-        <label for="year">Select Year:</label>
-        <select name="year" id="year">
-            {% for year in available_years %}
-                <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>
-                    {{ year }}
-                </option>
-            {% endfor %}
-        </select>
+            <!-- Month Selector -->
+            <div class="form-group">
+                <label for="month">{% translate "Month" %}:</label>
+                <select id="month" name="month" class="form-control" required>
+                    {% for month in 1|to:12 %}
+                        <option value="{{ month }}" {% if month == current_month %}selected{% endif %}>
+                            {% translate month_names|get_month_name:month %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <button type="submit">Filter</button>
-    </form>
+            <!-- Year Selector -->
+            <div class="form-group">
+                <label for="year">{% translate "Year" %}:</label>
+                <select id="year" name="year" class="form-control" required>
+                    {% for year in year_range %}
+                        <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>
+                            {{ year }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-    <h2>Player Data</h2>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Player Name</th>
-                <th>Fleet Count</th>
-                <th>Average Participants</th>
-                <th>Payment</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for player_name, data in player_data.items %}
-                <tr>
-                    <td>{{ player_name }}</td>
-                    <td>{{ data.total_fleet_count }}</td>
-                    <td>{{ data.avg_participants|floatformat:2 }}</td>
-                    <td>{{ data.payment|intcomma }}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</body>
-</html>
+            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
+                {% translate "Update Data" %}
+            </button>
+        </form>
+        <hr />
+
+        {% if player_data %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>{% translate "Player Name" %}</th>
+                        <th>{% translate "Total Fleets Created" %}</th>
+                        <th>{% translate "Average Participants" %}</th>
+                        <th>{% translate "Payment Amount" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player_name, data in player_data.items %}
+                        <tr>
+                            <td>{{ player_name }}</td>
+                            <td>{{ data.total_fleet_count }}</td>
+                            <td>{{ data.avg_participants|floatformat:1 }}</td> <!-- Display avg participants -->
+                            <td>{{ data.payment|intcomma }}</td> <!-- Format payment -->
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>{% translate "No fleet count data available." %}</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
