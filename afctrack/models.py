@@ -4,13 +4,6 @@ from django.contrib.auth.models import User
 from afat.models import FatLink, Fat
 from datetime import datetime
 
-# Doctrine points
-POINTS = {
-    'PCT/Roam': 0.5,
-    'Strat OP': 1,
-    'Hive': 1.5
-}
-
 class General(models.Model):
     """Meta model for app permissions"""
     
@@ -20,7 +13,19 @@ class General(models.Model):
         # This model is not intended to be managed by Django (e.g., not to be migrated)
         managed = False
         default_permissions = ()
-        permissions = (("basic_access", "Can access this app"),)
+        permissions = (
+            ("basic_access", "Can access this app"),
+            ("view_fleet_data", "Can view fleet data"),
+            ("manage_fleet_payments", "Can manage fleet payments"),
+            ("view_fleet_counts", "Can view fleet counts by doctrine/type"),
+        )
+
+# Doctrine points
+POINTS = {
+    'PCT/Roam': 0.5,
+    'Strat OP': 1,
+    'Hive': 1.5
+}
 
 def get_current_month_and_year():
     """
