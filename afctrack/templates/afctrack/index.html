@@ -24,14 +24,13 @@
                     required
                 />
             </div>
-
             <!-- Month Selector -->
             <div class="form-group">
                 <label for="month">{% translate "Month" %}:</label>
                 <select id="month" name="month" class="form-control" required>
                     {% for month in available_months %}
                         <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>
-                            {{ month|date:"F" }} <!-- Display month name from month number -->
+                            {{ month }}
                         </option>
                     {% endfor %}
                 </select>
