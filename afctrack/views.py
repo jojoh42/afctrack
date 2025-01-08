@@ -3,15 +3,8 @@ from datetime import datetime
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render
 from django.contrib.auth.models import User
-from django.db.models import Count
-from .models import FatLink, Fat
-
-# Doctrine points
-POINTS = {
-    'P': 0.5,
-    'Strat OP': 1,
-    'Hive': 1.5
-}
+from django.db.models import Count, Sum
+from .models import FatLink, Fat, POINTS
 
 @login_required
 @permission_required("afctrack.basic_access")
@@ -175,7 +168,6 @@ def get_fleet_type_amount(selected_month, selected_year):
 
     return fleet_data
 
-
 def index(request):
     # Get the current month and year
     current_month = datetime.now().month
@@ -271,4 +263,3 @@ def fleet_type_amount(request):
     }
 
     return render(request, "afctrack/fleet_type_amount.html", context)
-
