@@ -15,9 +15,6 @@ class General(models.Model):
         default_permissions = ()
         permissions = (
             ("basic_access", "Can access this app"),
-            ("view_fleet_data", "Can view fleet data"),
-            ("manage_fleet_payments", "Can manage fleet payments"),
-            ("view_fleet_counts", "Can view fleet counts by doctrine/type"),
         )
 
 # Doctrine points
