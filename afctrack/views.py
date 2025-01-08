@@ -8,7 +8,7 @@ from .models import FatLink, Fat
 
 # Doctrine points
 POINTS = {
-    'PCT/Roam': 0.5,
+    'Peacetime': 0.5,
     'Strat OP': 1,
     'Hive': 1.5
 }
@@ -137,7 +137,7 @@ def get_fleet_type_amount(selected_month, selected_year):
     Get fleet type counts and average participants for the selected month/year.
     """
     # Get the primary keys of users in the "jfc" or "fc" groups
-    fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
+    fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc", "Mining Officer"]).values_list('id', flat=True)
 
     # Filter FatLink by fleet_type and selected month/year
     fleet_count_type = FatLink.objects.filter(

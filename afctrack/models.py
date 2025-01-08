@@ -19,7 +19,7 @@ class General(models.Model):
 
 # Doctrine points
 POINTS = {
-    'PCT/Roam': 0.5,
+    'Peacetime': 0.5,
     'Strat OP': 1,
     'Hive': 1.5
 }
@@ -131,7 +131,7 @@ def get_fleet_count_by_type():
     """
     current_month, current_year = get_current_month_and_year()
 
-    fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
+    fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc", "Mining Officer"]).values_list('id', flat=True)
 
     fleet_count_type = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
