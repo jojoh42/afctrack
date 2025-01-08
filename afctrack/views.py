@@ -150,8 +150,3 @@ def doctrine_amount(request):
         'selected_year': selected_year,    # Ensure selected year is highlighted
     }
     return render(request, "afctrack/doctrine_amount.html")
-
-def fleet_counts(request):
-    # This view is added as required by the error trace.
-    # You can add logic here if necessary. Otherwise, it can just be a placeholder view.
-    return render(request, 'afctrack/fleet_counts.html')
