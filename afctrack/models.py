@@ -3,6 +3,7 @@ from django.db.models import Count, Sum
 from django.contrib.auth.models import User
 from datetime import datetime
 from decimal import Decimal
+from afat.models import FatLink, Fat
 
 class General(models.Model):
     """Meta model for app permissions"""
