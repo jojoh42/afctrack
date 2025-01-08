@@ -95,6 +95,9 @@ def index(request):
     # Get the month name
     month_name = calendar.month_name[current_month]
 
+    # Create a list of months (1 to 12)
+    available_months = list(range(1, 13))  # months from 1 to 12
+
     # Get the budget from GET parameters (default to 3 billion ISK)
     budget = int(request.GET.get('budget', 3000000000))
 
@@ -104,6 +107,7 @@ def index(request):
     # Pass data to the template
     context = {
         'month_name': month_name,
+        'available_months': available_months,  # Pass the months to the template
         'player_payments': player_payments,
         'budget': budget,
     }
