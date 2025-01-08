@@ -1,0 +1,38 @@
+{% load i18n %}
+{% load navactive %}
+
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse" aria-expanded="false">
+                <span class="sr-only">{% trans "Toggle navigation" %}</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="{% url 'index' %}">My App</a>
+        </div>
+        <div class="collapse navbar-collapse" id="navbar-collapse">
+            <ul class="nav navbar-nav">
+                <li class="{% navactive request 'index' %}">
+                    <a href="{% url 'index' %}">
+                        Home
+                    </a>
+                </li>
+                <li class="{% navactive request 'doctrine_amount' %}">
+                    <a href="{% url 'doctrine_amount' %}">
+                        Doctrine Amount
+                    </a>
+                </li>
+
+                {% if perms.afctrack.manage %}
+                    <li class="{% navactive request 'afctrack:manage' %}">
+                        <a href="{% url 'afctrack:manage' %}">
+                            Manage Doctrine
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
