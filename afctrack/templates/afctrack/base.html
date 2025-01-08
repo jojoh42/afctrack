@@ -1,34 +1,29 @@
-{% extends "allianceauth/base-bs5.html" %}
-{% load i18n %}
+{% extends 'allianceauth/base-bs5.html' %}
 {% load humanize %}
-{% load static %}
+{% load i18n %}
 
 {% block page_title %}
-    {% translate "Market Manager" %}
+    {% translate "afctrack Plugin" %}
 {% endblock page_title %}
 
 {% block header_nav_brand %}
-    {% translate "Market Manager" %}
+    {% translate "afctrack Plugin" %}
 {% endblock header_nav_brand %}
 
 {% block header_nav_collapse_left %}
+    <!-- Remove any includes of missing templates -->
     <ul class="nav-item">
-        {% include "marketmanager/marketbrowser/search-bs5.html" %}
+        <a href="{% url 'index' %}" class="nav-link">{% translate "Home" %}</a>
     </ul>
-    <ul class="nav-item dropdown">
-        {% include "marketmanager/marketbrowser/region_selector-bs5.html" %}
+    <ul class="nav-item">
+        <a href="{% url 'doctrine_amount' %}" class="nav-link">{% translate "Doctrine Amount" %}</a>
     </ul>
 {% endblock header_nav_collapse_left %}
 
 {% block header_nav_collapse_right %}
+    <!-- Add your nav items here -->
     <li class="nav-item">
-        <a href="{% url 'marketmanager:add_char' %}" class="nav-link">{% translate "Add Character Token" %}</a>
-    </li>
-    <li class="nav-item">
-        <a href="{% url 'marketmanager:add_corp' %}" class="nav-link">{% translate "Add Corporate Token" %}</a>
-    </li>
-    <li class="nav-item">
-        <a href="{% url 'marketmanager:marketwatches' %}" class="nav-link">{% translate "Market Watch Status" %}</a>
+        <a href="{% url 'some-other-url' %}" class="nav-link">{% translate "Some Other Page" %}</a>
     </li>
 {% endblock header_nav_collapse_right %}
 
