@@ -56,7 +56,7 @@ def get_fleet_counts_and_payment(budget):
 
     # Aggregate fleet counts, doctrine points, and participants
     player_data = {}
-    total_fleet_points = 0
+    total_fleet_points = Decimal(0)  # Initialize as Decimal
 
     for fleet in fleet_counts:
         player_name = fleet['creator_id__username']
@@ -76,7 +76,7 @@ def get_fleet_counts_and_payment(budget):
         player_data[player_name]['total_payment'] += Decimal(payment)
         player_data[player_name]['total_fleets'] += fleet_count
         player_data[player_name]['total_participants'] += total_participants
-        total_fleet_points += fleet_count * doctrine_points  # Update total_fleet_points
+        total_fleet_points += Decimal(fleet_count * doctrine_points)  # Update total_fleet_points
 
     # Calculate the average participants and normalize payments
     budget = Decimal(budget)  # Convert budget to Decimal
