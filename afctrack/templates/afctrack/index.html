@@ -3,6 +3,30 @@
 {% load humanize %}
 
 {% block details %}
+<!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">Fleet Tracker</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+            <li class="nav-item active">
+                <a class="nav-link" href="{% url 'afctrack:index' %}">{% translate "Home" %}</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'afctrack:fleet_counts' %}">{% translate "Fleet Counts" %}</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'afctrack:doctrine_amount' %}">{% translate "Doctrine Amount" %}</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'afctrack:about' %}">{% translate "About" %}</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
 <!-- Fleet Counts Panel -->
 <div class="panel panel-info">
     <div class="panel-heading">
