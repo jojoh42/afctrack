@@ -15,7 +15,6 @@ POINTS = {
 
 @login_required
 @permission_required("afctrack.basic_access")
-
 def get_fleet_counts_and_payment(request, budget, selected_month, selected_year):
     print(f"Request user: {request.user}")
     """
@@ -195,7 +194,7 @@ def index(request):
     budget = int(request.GET.get('budget', 3000000000))
 
     # Get the fleet counts and payments based on the selected month, year, and budget
-    player_payments = get_fleet_counts_and_payment(budget, selected_month, selected_year)
+    player_payments = get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
 
     # Pass data to the template
     context = {
@@ -256,15 +255,15 @@ def fleet_type_amount(request):
     # Create a list of years (current year and previous 5 years, for example)
     available_years = list(range(current_year - 5, current_year + 1))
 
-    # Get the fleet counts by type instead of doctrine
-    fleet_type_counts = get_fleet_type_amount(selected_month, selected_year)
+    # Get the fleet type counts and average participants
+    fleet_data = get_fleet_type_amount(selected_month, selected_year)
 
     # Pass data to the template
     context = {
         'month_name': calendar.month_name[selected_month],
         'available_months': available_months,  # List of months
         'available_years': available_years,    # List of years
-        'fleet_type_counts': fleet_type_counts,
+        'fleet_data': fleet_data,
         'selected_month': selected_month,  # Ensure selected month is highlighted
         'selected_year': selected_year,    # Ensure selected year is highlighted
     }

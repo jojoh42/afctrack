@@ -29,26 +29,24 @@ def get_current_month_and_year():
     current_year = datetime.now().year
     return current_month, current_year
 
-def get_fleet_counts_and_payment(budget):
+def get_fleet_counts_and_payment(budget, selected_month, selected_year):
     """
     Get fleet counts and calculate the payment for each user based on their fleet count, doctrine, and participants.
     Returns a list of dictionaries with player names, payments, and average participants.
     """
-    current_month, current_year = get_current_month_and_year()
+    current_month = selected_month
+    current_year = selected_year
 
     # Get the primary keys of users in the "jfc" or "fc" groups
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
 
-    # Filter FatLink by those users and the current month/year, annotate with participant count
+    # Filter FatLink by those users and the selected month/year
     fleet_counts = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
         created__month=current_month,
         created__year=current_year
     ).values('creator_id__username', 'id', 'fleet_type')\
-     .annotate(
-        fleet_count=Count('id'),
-        total_participants=Sum('fat__id')  # Sum of related Fat entries (replace with correct annotation if needed)
-    ).order_by('creator_id__username', 'fleet_type')
+     .annotate(fleet_count=Count('id')).order_by('creator_id__username', 'fleet_type')
 
     # Aggregate fleet counts, doctrine points, and participants
     player_data = {}
@@ -59,7 +57,9 @@ def get_fleet_counts_and_payment(budget):
         fleet_id = fleet['id']
         fleet_type = fleet['fleet_type']
         fleet_count = fleet['fleet_count']
-        participant_count = fleet['total_participants'] or 0
+
+        # Count participants for this fleet from the afat_fat table
+        participant_count = Fat.objects.filter(fatlink_id=fleet_id).count()
 
         # Get points for the doctrine
         fleet_points = POINTS.get(fleet_type, 0)
@@ -102,40 +102,88 @@ def get_fleet_counts_and_payment(budget):
     return player_payments
 
 
-def get_fleet_count_by_doctrine():
+def get_doctrine_counts(selected_month, selected_year):
     """
-    Get doctrine counts for the current month/year and return the results as a list of dictionaries.
+    Get doctrine counts and average participants for the selected month/year.
     """
-    current_month, current_year = get_current_month_and_year()
-
+    # Get the primary keys of users in the "jfc" or "fc" groups
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
 
-    # Query to get doctrine counts for the current month/year
-    fleet_count_doctrine = FatLink.objects.filter(
+    # Filter FatLink by those users and the selected month/year
+    doctrine_counts = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
-        created__month=current_month,
-        created__year=current_year
-    ).values('doctrine')\
-     .annotate(doctrine_count=Count('id'))\
-     .order_by('-doctrine_count')
+        created__month=selected_month,
+        created__year=selected_year
+    ).values('doctrine').annotate(
+        doctrine_count=Count('id')
+    ).order_by('-doctrine_count')
 
-    return fleet_count_doctrine
+    # Calculate average participants per doctrine
+    doctrine_data = []
+    for doctrine in doctrine_counts:
+        doctrine_name = doctrine['doctrine']
+        doctrine_count = doctrine['doctrine_count']
 
+        # Count total participants for all fleets under this doctrine
+        total_participants = Fat.objects.filter(
+            fatlink_id__in=FatLink.objects.filter(
+                creator_id__in=fc_users_ids,
+                created__month=selected_month,
+                created__year=selected_year,
+                doctrine=doctrine_name
+            ).values_list('id', flat=True)
+        ).count()
 
-def get_fleet_count_by_type():
+        # Calculate average participants per fleet
+        avg_participants = total_participants / doctrine_count if doctrine_count > 0 else 0
+
+        doctrine_data.append({
+            'doctrine': doctrine_name,
+            'doctrine_count': doctrine_count,
+            'avg_participants': round(avg_participants, 1),  # Round to 1 decimal
+        })
+
+    return doctrine_data
+
+def get_fleet_type_amount(selected_month, selected_year):
     """
-    Get fleet type counts for the current month/year and return the results as a list of dictionaries.
+    Get fleet type counts and average participants for the selected month/year.
     """
-    current_month, current_year = get_current_month_and_year()
-
+    # Get the primary keys of users in the "jfc" or "fc" groups
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
 
+    # Filter FatLink by fleet_type and selected month/year
     fleet_count_type = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
-        created__month=current_month,
-        created__year=current_year
-    ).values('fleet_type')\
-     .annotate(type_count=Count('id'))\
-     .order_by('-type_count')
+        created__month=selected_month,
+        created__year=selected_year
+    ).values('fleet_type').annotate(
+        type_count=Count('id')
+    ).order_by('-type_count')
 
-    return list(fleet_count_type)  # This will convert queryset to a list
+    # Calculate average participants per fleet type
+    fleet_data = []
+    for fleet in fleet_count_type:
+        fleet_type = fleet['fleet_type']
+        fleet_count = fleet['type_count']
+
+        # Count total participants for all fleets of this fleet_type
+        total_participants = Fat.objects.filter(
+            fatlink_id__in=FatLink.objects.filter(
+                creator_id__in=fc_users_ids,
+                created__month=selected_month,
+                created__year=selected_year,
+                fleet_type=fleet_type
+            ).values_list('id', flat=True)
+        ).count()
+
+        # Calculate average participants per fleet type
+        avg_participants = total_participants / fleet_count if fleet_count > 0 else 0
+
+        fleet_data.append({
+            'fleet_type': fleet_type,
+            'fleet_count': fleet_count,
+            'avg_participants': round(avg_participants, 1),  # Round to 1 decimal
+        })
+
+    return fleet_data
