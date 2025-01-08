@@ -13,17 +13,17 @@
 {% block header_nav_collapse_left %}
     <!-- Remove any includes of missing templates -->
     <ul class="nav-item">
-        <a href="{% url 'index' %}" class="nav-link">{% translate "Home" %}</a>
+        <a href="{% url 'afctrack:index' %}" class="nav-link">{% translate "Home" %}</a>
     </ul>
     <ul class="nav-item">
-        <a href="{% url 'doctrine_amount' %}" class="nav-link">{% translate "Doctrine Amount" %}</a>
+        <a href="{% url 'afctrack:doctrine_amount' %}" class="nav-link">{% translate "Doctrine Amount" %}</a>
     </ul>
 {% endblock header_nav_collapse_left %}
 
 {% block header_nav_collapse_right %}
     <!-- Add your nav items here -->
     <li class="nav-item">
-        <a href="{% url 'some-other-url' %}" class="nav-link">{% translate "Some Other Page" %}</a>
+        <a href="{% url 'afctrack:some-other-url' %}" class="nav-link">{% translate "Some Other Page" %}</a>
     </li>
 {% endblock header_nav_collapse_right %}
 
