@@ -3,7 +3,7 @@ from django.db.models import Count, Sum
 from django.contrib.auth.models import User
 from datetime import datetime
 from decimal import Decimal
-from afat.models import FatLink, Fat
+from afat.models import FatLink, Fat  # Keep this import
 
 class General(models.Model):
     """Meta model for app permissions"""
@@ -40,6 +40,7 @@ def get_fleet_counts_and_payment(budget):
 
     # Get the primary keys of users in the "jfc" or "fc" groups
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
+    print(f"FC Users IDs: {fc_users_ids}")
 
     # Filter FatLink by those users and the current month/year, annotate with participant count
     fleet_counts = FatLink.objects.filter(
@@ -51,6 +52,7 @@ def get_fleet_counts_and_payment(budget):
         fleet_count=Count('id'),
         total_participants=Sum('afat_fats__id')  # Correct field name for related Fat entries
     ).order_by('creator_id__username', 'fleet_type')
+    print(f"Fleet Counts: {fleet_counts}")
 
     # Aggregate fleet counts, doctrine points, and participants
     player_data = {}
@@ -81,6 +83,7 @@ def get_fleet_counts_and_payment(budget):
         data['normalized_payment'] = data['total_payment'] / total_fleet_points * budget if total_fleet_points > 0 else 0
 
     # Return the aggregated data
+    print(f"Player Data: {player_data}")
     return player_data
 
 def get_doctrine_counts(month, year):
