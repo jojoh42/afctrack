@@ -1,105 +1,62 @@
-import calendar
+from django.db import models
+from django.db.models import Count, Sum
+from django.contrib.auth.models import User
 from datetime import datetime
-from django.contrib.auth.decorators import login_required, permission_required
-from django.shortcuts import render
-from .models import get_fleet_counts_and_payment, get_doctrine_counts, get_fleet_type_amount
 
-@login_required
-@permission_required("afctrack.basic_access")
-def index(request):
-    # Get the current month and year
+class General(models.Model):
+    """Meta model for app permissions"""
+    
+    class Meta:
+        """Meta definitions"""
+        managed = False
+        default_permissions = ()
+        permissions = (
+            ("basic_access", "Can access this app"),
+        )
+
+# Doctrine points
+POINTS = {
+    'Peacetime': 0.5,
+    'Strat OP': 1,
+    'Hive': 1.5
+}
+
+def get_current_month_and_year():
+    """
+    Helper function to get the current month and year.
+    """
     current_month = datetime.now().month
     current_year = datetime.now().year
+    return current_month, current_year
 
-    # Get the selected month and year from GET parameters, default to current if not provided
-    selected_month = int(request.GET.get('month', current_month))
-    selected_year = int(request.GET.get('year', current_year))
+def get_fleet_counts_and_payment(budget):
+    """
+    Get fleet counts and calculate the payment for each user based on their fleet count, doctrine, and participants.
+    Returns a list of dictionaries with player names, payments, and average participants.
+    """
+    current_month, current_year = get_current_month_and_year()
 
-    # Create a list of months (1 to 12)
-    available_months = list(range(1, 13))  # months from 1 to 12
+    # Get the primary keys of users in the "jfc" or "fc" groups
+    fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
 
-    # Create a list of years (current year and previous 5 years, for example)
-    available_years = list(range(current_year - 5, current_year + 1))
+    # Filter FatLink by those users and the current month/year, annotate with participant count
+    fleet_counts = FatLink.objects.filter(
+        creator_id__in=fc_users_ids,
+        created__month=current_month,
+        created__year=current_year
+    ).values('creator_id__username', 'id', 'fleet_type')\
+     .annotate(
+        fleet_count=Count('id'),
+        total_participants=Sum('fat__id')  # Sum of related Fat entries (replace with correct annotation if needed)
+    ).order_by('creator_id__username', 'fleet_type')
 
-    # Get the budget from GET parameters (default to 3 billion ISK)
-    budget = int(request.GET.get('budget', 3000000000))
+    # Aggregate fleet counts, doctrine points, and participants
+    player_data = {}
+    total_fleet_points = 0
 
-    # Get the fleet counts and payments based on the selected month, year, and budget
-    player_payments = get_fleet_counts_and_payment(budget)
+    for fleet in fleet_counts:
+        player_name = fleet['creator_id__username']
+        # Continue with your logic here...
 
-    # Pass data to the template
-    context = {
-        'month_name': calendar.month_name[selected_month],
-        'available_months': available_months,  # List of months
-        'available_years': available_years,    # List of years
-        'player_payments': player_payments,
-        'budget': budget,
-        'selected_month': selected_month,  # Ensure selected month is highlighted
-        'selected_year': selected_year,    # Ensure selected year is highlighted
-    }
-
-    return render(request, 'afctrack/index.html', context)
-
-@login_required
-@permission_required("afctrack.basic_access")
-def doctrine_amount(request):
-    # Get the current month and year
-    current_month = datetime.now().month
-    current_year = datetime.now().year
-
-    # Get the selected month and year from GET parameters, default to current if not provided
-    selected_month = int(request.GET.get('month', current_month))
-    selected_year = int(request.GET.get('year', current_year))
-
-    # Create a list of months (1 to 12)
-    available_months = list(range(1, 13))  # months from 1 to 12
-
-    # Create a list of years (current year and previous 5 years, for example)
-    available_years = list(range(current_year - 5, current_year + 1))
-
-    # Get the doctrine counts and average participants
-    doctrine_counts = get_doctrine_counts(selected_month, selected_year)
-
-    # Pass data to the template
-    context = {
-        'month_name': calendar.month_name[selected_month],
-        'available_months': available_months,  # List of months
-        'available_years': available_years,    # List of years
-        'doctrine_counts': doctrine_counts,
-        'selected_month': selected_month,  # Ensure selected month is highlighted
-        'selected_year': selected_year,    # Ensure selected year is highlighted
-    }
-
-    return render(request, "afctrack/doctrine_amount.html", context)
-
-@login_required
-@permission_required("afctrack.basic_access")
-def fleet_type_amount(request):
-    # Get the current month and year
-    current_month = datetime.now().month
-    current_year = datetime.now().year
-
-    # Get the selected month and year from GET parameters, default to current if not provided
-    selected_month = int(request.GET.get('month', current_month))
-    selected_year = int(request.GET.get('year', current_year))
-
-    # Create a list of months (1 to 12)
-    available_months = list(range(1, 13))  # months from 1 to 12
-
-    # Create a list of years (current year and previous 5 years, for example)
-    available_years = list(range(current_year - 5, current_year + 1))
-
-    # Get the fleet type counts
-    fleet_type_counts = get_fleet_type_amount(selected_month, selected_year)
-
-    # Pass data to the template
-    context = {
-        'month_name': calendar.month_name[selected_month],
-        'available_months': available_months,  # List of months
-        'available_years': available_years,    # List of years
-        'fleet_type_counts': fleet_type_counts,
-        'selected_month': selected_month,  # Ensure selected month is highlighted
-        'selected_year': selected_year,    # Ensure selected year is highlighted
-    }
-
-    return render(request, "afctrack/fleet_type_amount.html", context)
+    # Return the aggregated data
+    return player_data
