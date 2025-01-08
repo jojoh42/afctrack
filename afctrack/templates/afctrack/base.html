@@ -21,15 +21,7 @@
 {% endblock header_nav_collapse_left %}
 
 {% block content %}
-{% endblock content %}
-
-{% block extra_javascript %}
-    {% include "bundles/datatables-js-bs5.html" %}
-    {% include "bundles/jquery-ui-js.html" %}
-    {% include "bundles/moment-js.html" %}
-{% endblock extra_javascript %}
-
-{% block extra_css %}
-    {% include "bundles/datatables-css-bs5.html" %}
-    {% include "bundles/jquery-ui-css.html" %}
-{% endblock extra_css %}
+    <div class="allianceauth-afctrack-plugin">
+        {% block details %}{% endblock %}
+    </div>
+{% endblock %}
