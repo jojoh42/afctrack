@@ -5,6 +5,7 @@ from django.shortcuts import render
 from django.contrib.auth.models import User
 from django.db.models import Count, Sum
 from afat.models import FatLink, Fat
+from .models import POINTS
 
 @login_required
 @permission_required("afctrack.basic_access")
