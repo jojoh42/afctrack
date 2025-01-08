@@ -85,10 +85,9 @@ def get_fleet_counts_and_payment(budget, selected_month, selected_year):
     return player_payments
 
 
-def get_doctrine_count(selected_month, selected_year):
+def get_doctrine_counts(selected_month, selected_year):
     """
-    Get doctrine counts for the selected month and year.
-    Returns a list of dictionaries with doctrine names and their counts.
+    Get doctrine counts and average participants for the selected month/year.
     """
     # Get the primary keys of users in the "jfc" or "fc" groups
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
@@ -98,11 +97,37 @@ def get_doctrine_count(selected_month, selected_year):
         creator_id__in=fc_users_ids,
         created__month=selected_month,
         created__year=selected_year
-    ).values('doctrine')\
-     .annotate(doctrine_count=Count('id'))\
-     .order_by('-doctrine_count')
+    ).values('doctrine').annotate(
+        doctrine_count=Count('id')
+    ).order_by('-doctrine_count')
 
-    return doctrine_counts
+    # Calculate average participants per doctrine
+    doctrine_data = []
+    for doctrine in doctrine_counts:
+        doctrine_name = doctrine['doctrine']
+        doctrine_count = doctrine['doctrine_count']
+
+        # Count total participants for all fleets under this doctrine
+        total_participants = Fat.objects.filter(
+            fatlink_id__in=FatLink.objects.filter(
+                creator_id__in=fc_users_ids,
+                created__month=selected_month,
+                created__year=selected_year,
+                doctrine=doctrine_name
+            ).values_list('id', flat=True)
+        ).count()
+
+        # Calculate average participants per fleet
+        avg_participants = total_participants / doctrine_count if doctrine_count > 0 else 0
+
+        doctrine_data.append({
+            'doctrine': doctrine_name,
+            'doctrine_count': doctrine_count,
+            'avg_participants': round(avg_participants, 1),  # Round to 1 decimal
+        })
+
+    return doctrine_data
+
 
 
 def index(request):
@@ -155,17 +180,18 @@ def doctrine_amount(request):
     # Create a list of years (current year and previous 5 years, for example)
     available_years = list(range(current_year - 5, current_year + 1))
 
-    # Fetch doctrine counts for the selected month and year
-    doctrine_counts = get_doctrine_count(selected_month, selected_year)
+    # Get the doctrine counts and average participants
+    doctrine_counts = get_doctrine_counts(selected_month, selected_year)
 
     # Pass data to the template
     context = {
         'month_name': calendar.month_name[selected_month],
         'available_months': available_months,  # List of months
         'available_years': available_years,    # List of years
-        'doctrine_counts': doctrine_counts,    # Doctrine count data
-        'selected_month': selected_month,      # Ensure selected month is highlighted
-        'selected_year': selected_year,        # Ensure selected year is highlighted
+        'doctrine_counts': doctrine_counts,
+        'selected_month': selected_month,  # Ensure selected month is highlighted
+        'selected_year': selected_year,    # Ensure selected year is highlighted
     }
 
     return render(request, "afctrack/doctrine_amount.html", context)
+

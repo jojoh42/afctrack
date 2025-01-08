@@ -47,13 +47,15 @@
                     <tr>
                         <th>{% translate "Doctrine" %}</th>
                         <th>{% translate "Count" %}</th>
+                        <th>{% translate "Average Participants" %}</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for doctrine in doctrine_counts %}
                         <tr>
                             <td>{{ doctrine.doctrine }}</td>
-                            <td>{{ doctrine.doctrine_count|intcomma }}</td> <!-- Format count -->
+                            <td>{{ doctrine.doctrine_count|intcomma }}</td>
+                            <td>{{ doctrine.avg_participants|floatformat:1 }}</td> <!-- Display avg participants -->
                         </tr>
                     {% endfor %}
                 </tbody>
