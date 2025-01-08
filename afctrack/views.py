@@ -135,7 +135,7 @@ def get_fleet_type_amount(selected_month, selected_year):
     # Get the primary keys of users in the "jfc" or "fc" groups
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
 
-    # Filter FatLink by fleet type and selected month/year
+    # Filter FatLink by fleet_type and selected month/year
     fleet_count_type = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
         created__month=selected_month,
@@ -150,7 +150,7 @@ def get_fleet_type_amount(selected_month, selected_year):
         fleet_type = fleet['fleet_type']
         fleet_count = fleet['type_count']
 
-        # Count total participants for all fleets of this type
+        # Count total participants for all fleets of this fleet_type
         total_participants = Fat.objects.filter(
             fatlink_id__in=FatLink.objects.filter(
                 creator_id__in=fc_users_ids,
@@ -170,9 +170,6 @@ def get_fleet_type_amount(selected_month, selected_year):
         })
 
     return fleet_data
-
-
-
 
 def index(request):
     # Get the current month and year
