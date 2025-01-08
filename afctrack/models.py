@@ -1,7 +1,7 @@
 from django.db import models
-from django.db.models import Count
+from django.db.models import Count, Avg
 from django.contrib.auth.models import User
-from afat.models import FatLink
+from afat.models import FatLink, Fat
 from django.conf import settings
 from datetime import datetime
 
@@ -14,8 +14,8 @@ POINTS = {
 
 def get_fleet_counts_and_payment(budget):
     """
-    Get fleet counts and calculate the payment for each user based on their fleet count and doctrine.
-    This function returns a list of dictionaries with player names and their corresponding payments.
+    Get fleet counts and calculate the payment for each user based on their fleet count, doctrine, and participants.
+    Returns a list of dictionaries with player names, payments, and average participants.
     """
     # Get the current month and year
     current_month = datetime.now().month
@@ -29,19 +29,24 @@ def get_fleet_counts_and_payment(budget):
         creator_id__in=fc_users_ids,
         created__month=current_month,
         created__year=current_year
-    ).values('creator_id__username', 'fleet_type')\
-     .annotate(fleet_count=Count('id'))\
-     .order_by('creator_id__username', 'fleet_type')
+    ).values('creator_id__username', 'id', 'fleet_type')\
+     .annotate(
+        fleet_count=Count('id')
+    ).order_by('creator_id__username', 'fleet_type')
 
-    # Aggregate fleet counts and doctrine points
+    # Aggregate fleet counts, doctrine points, and participants
     player_data = {}
     total_fleet_points = 0
 
-    for player in fleet_counts:
-        player_name = player['creator_id__username']
-        fleet_type = player['fleet_type']
-        fleet_count = player['fleet_count']
-        
+    for fleet in fleet_counts:
+        player_name = fleet['creator_id__username']
+        fleet_id = fleet['id']
+        fleet_type = fleet['fleet_type']
+        fleet_count = fleet['fleet_count']
+
+        # Count participants for this fleet from the afat_fat table
+        participant_count = Fat.objects.filter(fatlink_id=fleet_id).count()
+
         # Get points for the doctrine
         fleet_points = POINTS.get(fleet_type, 0)
 
@@ -49,11 +54,13 @@ def get_fleet_counts_and_payment(budget):
             player_data[player_name] = {
                 'total_fleet_count': 0,
                 'total_fleet_points': 0,
+                'total_participants': 0,
             }
 
-        # Accumulate fleet counts and points for the player
+        # Accumulate fleet counts, points, and participants for the player
         player_data[player_name]['total_fleet_count'] += fleet_count
         player_data[player_name]['total_fleet_points'] += fleet_points * fleet_count
+        player_data[player_name]['total_participants'] += participant_count
         total_fleet_points += fleet_points * fleet_count
 
     # Calculate ISK per point if the total score is greater than 0
@@ -69,9 +76,12 @@ def get_fleet_counts_and_payment(budget):
     for player_name, data in player_data.items():
         # Calculate the payment based on the doctrine points
         payment = data['total_fleet_points'] * round_isk_per_point
+        # Calculate the average participants per fleet
+        avg_participants = data['total_participants'] / data['total_fleet_count'] if data['total_fleet_count'] > 0 else 0
         player_payments.append({
             'player_name': player_name,
             'fleet_count': data['total_fleet_count'],
+            'avg_participants': avg_participants,
             'payment': payment,
         })
 

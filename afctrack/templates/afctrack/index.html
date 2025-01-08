@@ -16,7 +16,12 @@
                 type="number"
                 id="budget"
                 name="budget"
-                value="3000000000" /> <!-- Default value -->
+                value="3000000000"  <!-- Default value -->
+                min="0"
+                step="100000000"
+                class="form-control"
+                required
+            />
             <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
                 {% translate "Update Budget" %}
             </button>
@@ -28,6 +33,7 @@
                     <tr>
                         <th>{% translate "Player Name" %}</th>
                         <th>{% translate "Total Fleets Created" %}</th>
+                        <th>{% translate "Average Participants" %}</th>
                         <th>{% translate "Payment Amount" %}</th>
                     </tr>
                 </thead>
@@ -36,6 +42,7 @@
                         <tr>
                             <td>{{ player_name }}</td>
                             <td>{{ data.total_fleet_count }}</td>
+                            <td>{{ data.avg_participants|floatformat:1 }}</td> <!-- Display avg participants -->
                             <td>{{ data.payment|intcomma }}</td> <!-- Format payment -->
                         </tr>
                     {% endfor %}

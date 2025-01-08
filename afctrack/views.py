@@ -1,8 +1,8 @@
 from django.shortcuts import render
-from django.db.models import Count
+from django.db.models import Count, Avg
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
-from afat.models import FatLink
+from afat.models import FatLink, Fat
 from django.conf import settings
 from datetime import datetime
 
@@ -17,7 +17,7 @@ POINTS = {
 @permission_required("afctrack.fc_access", raise_exception=True)
 def index(request):
     """
-    Index view that displays fleet counts per player.
+    Index view that displays fleet counts per player and average participants.
     """
     # Get the current month and year
     current_month = datetime.now().month
@@ -31,17 +31,22 @@ def index(request):
         creator_id__in=fc_users_ids,
         created__month=current_month,
         created__year=current_year
-    ).values('creator_id__username', 'fleet_type')\
-     .annotate(fleet_count=Count('id'))\
-     .order_by('creator_id__username', 'fleet_type')  # Sort by player and fleet type
+    ).values('creator_id__username', 'id', 'fleet_type')\
+     .annotate(
+        fleet_count=Count('id')
+    ).order_by('creator_id__username', 'fleet_type')
 
     # Prepare the fleet data with aggregated information for each player
     player_data = {}
 
-    for player in fleet_counts:
-        player_name = player['creator_id__username']
-        fleet_type = player['fleet_type']
-        fleet_count = player['fleet_count']
+    for fleet in fleet_counts:
+        player_name = fleet['creator_id__username']
+        fleet_id = fleet['id']
+        fleet_type = fleet['fleet_type']
+        fleet_count = fleet['fleet_count']
+
+        # Count participants for this fleet from the afat_fat table
+        participant_count = Fat.objects.filter(fatlink_id=fleet_id).count()
 
         # Get points for the doctrine
         fleet_points = POINTS.get(fleet_type, 0)
@@ -50,16 +55,24 @@ def index(request):
             player_data[player_name] = {
                 'total_fleet_count': 0,
                 'total_fleet_points': 0,
+                'total_participants': 0,
                 'fleet_count': 0,  # Used for accumulating total fleet count
                 'fleet_points': 0   # Used for accumulating total points
             }
 
-        # Accumulate fleet counts and points for the player
+        # Accumulate fleet counts, points, and participants for the player
         player_data[player_name]['total_fleet_count'] += fleet_count
         player_data[player_name]['total_fleet_points'] += fleet_points * fleet_count
+        player_data[player_name]['total_participants'] += participant_count
 
-    # Now that we have the total fleet counts and points for each player, 
-    # calculate payments for each player.
+    # Now calculate the average participants per player's fleets
+    for player_name, data in player_data.items():
+        if data['total_fleet_count'] > 0:
+            data['avg_participants'] = data['total_participants'] / data['total_fleet_count']
+        else:
+            data['avg_participants'] = 0
+
+    # Calculate payments for each player
     total_score = sum(player['total_fleet_points'] for player in player_data.values())
     budget = int(request.GET.get('budget', 3000000000))
 
@@ -71,7 +84,6 @@ def index(request):
         isk_per_point = 0
         round_isk_per_point = round(isk_per_point)
 
-    # Calculate payment for each player
     for player_name, data in player_data.items():
         data['payment'] = data['total_fleet_points'] * round_isk_per_point
 
