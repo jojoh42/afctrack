@@ -2,7 +2,7 @@ from django.db import models
 from django.db.models import Count, Sum
 from django.contrib.auth.models import User
 from datetime import datetime
-from afat.models import FatLink, Fat
+from decimal import Decimal
 
 class General(models.Model):
     """Meta model for app permissions"""
@@ -63,14 +63,14 @@ def get_fleet_counts_and_payment(budget):
 
         if player_name not in player_data:
             player_data[player_name] = {
-                'total_payment': 0,
+                'total_payment': Decimal(0),
                 'total_fleets': 0,
                 'total_participants': 0
             }
 
         doctrine_points = POINTS.get(fleet_type, 1)
         payment = fleet_count * doctrine_points * total_participants
-        player_data[player_name]['total_payment'] += payment
+        player_data[player_name]['total_payment'] += Decimal(payment)
         player_data[player_name]['total_fleets'] += fleet_count
         player_data[player_name]['total_participants'] += total_participants
 
