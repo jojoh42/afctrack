@@ -121,3 +121,37 @@ def index(request):
     }
 
     return render(request, 'afctrack/index.html', context)
+
+    # View for Doctrine Amount page
+def doctrine_amount(request):
+        # Get the current month and year
+    current_month = datetime.now().month
+    current_year = datetime.now().year
+
+    # Get the selected month and year from GET parameters, default to current if not provided
+    selected_month = int(request.GET.get('month', current_month))
+    selected_year = int(request.GET.get('year', current_year))
+
+    # Create a list of months (1 to 12)
+    available_months = list(range(1, 13))  # months from 1 to 12
+
+    # Create a list of years (current year and previous 5 years, for example)
+    available_years = list(range(current_year - 5, current_year + 1))
+
+    # Get the budget from GET parameters (default to 3 billion ISK)
+    budget = int(request.GET.get('budget', 3000000000))
+
+    # Get the fleet counts and payments based on the selected month, year, and budget
+    player_payments = get_fleet_counts_and_payment(budget, selected_month, selected_year)
+
+    # Pass data to the template
+    context = {
+        'month_name': calendar.month_name[selected_month],
+        'available_months': available_months,  # List of months
+        'available_years': available_years,    # List of years
+        'player_payments': player_payments,
+        'budget': budget,
+        'selected_month': selected_month,  # Ensure selected month is highlighted
+        'selected_year': selected_year,    # Ensure selected year is highlighted
+    }
+    return render(request, "afctrack/doctrine_amount.html")
