@@ -65,12 +65,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for player in player_payments %}
+                    {% for player_name, data in player_payments.items %}
                         <tr>
-                            <td>{{ player.player_name }}</td>
-                            <td>{{ player.fleet_count }}</td>
-                            <td>{{ player.avg_participants|floatformat:1 }}</td> <!-- Display avg participants -->
-                            <td>{{ player.payment|intcomma }}</td> <!-- Format payment -->
+                            <td>{{ player_name }}</td>
+                            <td>{{ data.total_fleets }}</td>
+                            <td>{{ data.average_participants|floatformat:1 }}</td> <!-- Display avg participants -->
+                            <td>{{ data.normalized_payment|intcomma }}</td> <!-- Format payment -->
                         </tr>
                     {% endfor %}
                 </tbody>
