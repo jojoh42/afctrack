@@ -1,9 +1,8 @@
 from django.shortcuts import render
-from django.db.models import Count, Avg
+from django.db.models import Count
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
 from afat.models import FatLink, Fat
-from django.conf import settings
 from datetime import datetime
 
 # Doctrine points
@@ -17,27 +16,33 @@ POINTS = {
 @permission_required("afctrack.fc_access", raise_exception=True)
 def index(request):
     """
-    Index view that displays fleet counts per player and average participants.
+    Index view that displays fleet counts per player and includes a month/year selector.
     """
-    # Get the current month and year
-    current_month = datetime.now().month
+    # Get the selected month and year, or default to the current month and year
+    selected_month = int(request.GET.get('month', datetime.now().month))
+    selected_year = int(request.GET.get('year', datetime.now().year))
+
+    # Get a list of available months and years for the dropdown
+    available_months = list(range(1, 13))  # January (1) to December (12)
     current_year = datetime.now().year
+    available_years = list(range(current_year - 5, current_year + 1))  # Last 5 years to the current year
 
     # Get the primary keys of users in the "jfc" or "fc" groups
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
 
-    # Filter FatLink by those users and the current month/year
+    # Filter FatLink by those users and the selected month/year
     fleet_counts = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
-        created__month=current_month,
-        created__year=current_year
+        created__month=selected_month,
+        created__year=selected_year
     ).values('creator_id__username', 'id', 'fleet_type')\
      .annotate(
         fleet_count=Count('id')
     ).order_by('creator_id__username', 'fleet_type')
 
-    # Prepare the fleet data with aggregated information for each player
+    # Aggregate fleet counts, doctrine points, and participants
     player_data = {}
+    total_fleet_points = 0
 
     for fleet in fleet_counts:
         player_name = fleet['creator_id__username']
@@ -56,40 +61,37 @@ def index(request):
                 'total_fleet_count': 0,
                 'total_fleet_points': 0,
                 'total_participants': 0,
-                'fleet_count': 0,  # Used for accumulating total fleet count
-                'fleet_points': 0   # Used for accumulating total points
             }
 
         # Accumulate fleet counts, points, and participants for the player
         player_data[player_name]['total_fleet_count'] += fleet_count
         player_data[player_name]['total_fleet_points'] += fleet_points * fleet_count
         player_data[player_name]['total_participants'] += participant_count
-
-    # Now calculate the average participants per player's fleets
-    for player_name, data in player_data.items():
-        if data['total_fleet_count'] > 0:
-            data['avg_participants'] = data['total_participants'] / data['total_fleet_count']
-        else:
-            data['avg_participants'] = 0
-
-    # Calculate payments for each player
-    total_score = sum(player['total_fleet_points'] for player in player_data.values())
-    budget = int(request.GET.get('budget', 3000000000))
+        total_fleet_points += fleet_points * fleet_count
 
     # Calculate ISK per point if the total score is greater than 0
-    if total_score > 0:
-        isk_per_point = budget / total_score
+    budget = int(request.GET.get('budget', 3000000000))
+    if total_fleet_points > 0:
+        isk_per_point = budget / total_fleet_points
         round_isk_per_point = round(isk_per_point)
     else:
         isk_per_point = 0
         round_isk_per_point = round(isk_per_point)
 
+    # Calculate the payment for each player
     for player_name, data in player_data.items():
+        # Calculate the payment based on the doctrine points
         data['payment'] = data['total_fleet_points'] * round_isk_per_point
+        # Calculate the average participants per fleet
+        data['avg_participants'] = data['total_participants'] / data['total_fleet_count'] if data['total_fleet_count'] > 0 else 0
 
     # Prepare the context for rendering the template
     context = {
         "player_data": player_data,  # Pass the aggregated player data to the template
+        "available_months": available_months,
+        "available_years": available_years,
+        "selected_month": selected_month,
+        "selected_year": selected_year,
     }
 
     # Render the template with the context
