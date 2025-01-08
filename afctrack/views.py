@@ -144,9 +144,9 @@ def get_fleet_type_amount(selected_month, selected_year):
         creator_id__in=fc_users_ids,
         created__month=selected_month,
         created__year=selected_year
-    ).values('fleet_type').annotate(
-        type_count=Count('id')
-    ).order_by('-type_count')
+    ).values('fleet_type')\
+     .annotate(type_count=Count('id'))\
+     .order_by('-type_count')
 
     # Calculate average participants per fleet type
     fleet_data = []
@@ -174,6 +174,7 @@ def get_fleet_type_amount(selected_month, selected_year):
         })
 
     return fleet_data
+
 
 def index(request):
     # Get the current month and year
