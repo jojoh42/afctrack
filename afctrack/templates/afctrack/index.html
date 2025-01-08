@@ -31,8 +31,8 @@
                 <select id="month" name="month" class="form-control" required>
                     {% for month in available_months %}
                         <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>
-                            {% with month_date=month|add:"-1"|date:"F" %}
-                                {{ month_date }}
+                            {% with month_name=month|date:"F" %}
+                                {{ month_name }}
                             {% endwith %}
                         </option>
                     {% endfor %}
