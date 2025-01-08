@@ -17,7 +17,6 @@ def get_fleet_counts_and_payment(budget, selected_month, selected_year):
     Get fleet counts and calculate the payment for each user based on their fleet count, doctrine, and participants.
     Returns a list of dictionaries with player names, payments, and average participants.
     """
-    # Use the selected month and year, or default to current
     current_month = selected_month
     current_year = selected_year
 
@@ -30,9 +29,7 @@ def get_fleet_counts_and_payment(budget, selected_month, selected_year):
         created__month=current_month,
         created__year=current_year
     ).values('creator_id__username', 'id', 'fleet_type')\
-     .annotate(
-        fleet_count=Count('id')
-    ).order_by('creator_id__username', 'fleet_type')
+     .annotate(fleet_count=Count('id')).order_by('creator_id__username', 'fleet_type')
 
     # Aggregate fleet counts, doctrine points, and participants
     player_data = {}
@@ -87,7 +84,6 @@ def get_fleet_counts_and_payment(budget, selected_month, selected_year):
 
     return player_payments
 
-
 def index(request):
     # Get the current month and year
     current_month = datetime.now().month
@@ -122,9 +118,8 @@ def index(request):
 
     return render(request, 'afctrack/index.html', context)
 
-    # View for Doctrine Amount page
 def doctrine_amount(request):
-        # Get the current month and year
+    # Get the current month and year
     current_month = datetime.now().month
     current_year = datetime.now().year
 
@@ -155,3 +150,8 @@ def doctrine_amount(request):
         'selected_year': selected_year,    # Ensure selected year is highlighted
     }
     return render(request, "afctrack/doctrine_amount.html")
+
+def fleet_counts(request):
+    # This view is added as required by the error trace.
+    # You can add logic here if necessary. Otherwise, it can just be a placeholder view.
+    return render(request, 'afctrack/fleet_counts.html')
