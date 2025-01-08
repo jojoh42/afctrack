@@ -16,7 +16,8 @@ POINTS = {
 @login_required
 @permission_required("afctrack.basic_access")
 
-def get_fleet_counts_and_payment(budget, selected_month, selected_year):
+def get_fleet_counts_and_payment(request, budget, selected_month, selected_year):
+    print(f"Request user: {request.user}")
     """
     Get fleet counts and calculate the payment for each user based on their fleet count, doctrine, and participants.
     Returns a list of dictionaries with player names, payments, and average participants.
