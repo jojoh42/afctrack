@@ -56,7 +56,57 @@ def get_fleet_counts_and_payment(budget):
 
     for fleet in fleet_counts:
         player_name = fleet['creator_id__username']
-        # Continue with your logic here...
+        fleet_type = fleet['fleet_type']
+        fleet_count = fleet['fleet_count']
+        total_participants = fleet['total_participants']
+
+        if player_name not in player_data:
+            player_data[player_name] = {
+                'total_payment': 0,
+                'total_fleets': 0,
+                'total_participants': 0
+            }
+
+        doctrine_points = POINTS.get(fleet_type, 1)
+        payment = fleet_count * doctrine_points * total_participants
+        player_data[player_name]['total_payment'] += payment
+        player_data[player_name]['total_fleets'] += fleet_count
+        player_data[player_name]['total_participants'] += total_participants
+
+    # Calculate the average participants and normalize payments
+    for player_name, data in player_data.items():
+        data['average_participants'] = data['total_participants'] / data['total_fleets'] if data['total_fleets'] > 0 else 0
+        data['normalized_payment'] = data['total_payment'] / total_fleet_points * budget if total_fleet_points > 0 else 0
 
     # Return the aggregated data
     return player_data
+
+def get_doctrine_counts(month, year):
+    """
+    Get doctrine counts for the given month and year.
+    """
+    # Implement the logic to get doctrine counts
+    # Example:
+    doctrine_counts = FatLink.objects.filter(
+        created__month=month,
+        created__year=year
+    ).values('fleet_type').annotate(
+        count=Count('id')
+    ).order_by('fleet_type')
+
+    return doctrine_counts
+
+def get_fleet_type_amount(month, year):
+    """
+    Get fleet type amounts for the given month and year.
+    """
+    # Implement the logic to get fleet type amounts
+    # Example:
+    fleet_type_amounts = FatLink.objects.filter(
+        created__month=month,
+        created__year=year
+    ).values('fleet_type').annotate(
+        count=Count('id')
+    ).order_by('fleet_type')
+
+    return fleet_type_amounts
