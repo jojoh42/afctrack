@@ -17,7 +17,7 @@
                     type="number"
                     id="budget"
                     name="budget"
-                    value="{{ budget|default:3000000000 }}"  <!-- Default budget value -->
+                    value="{{ budget|default:3000000000 }}"  # Default budget value
                     min="0"
                     step="1"
                     class="form-control"
@@ -29,8 +29,8 @@
             <div class="form-group">
                 <label for="month">{% translate "Month" %}:</label>
                 <select id="month" name="month" class="form-control" required>
-                    {% for month in 1|to:12 %}
-                        <option value="{{ month }}" {% if month == current_month %}selected{% endif %}>
+                    {% for month in available_months %}
+                        <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>
                             {% translate month_names|get_month_name:month %}
                         </option>
                     {% endfor %}
@@ -41,8 +41,8 @@
             <div class="form-group">
                 <label for="year">{% translate "Year" %}:</label>
                 <select id="year" name="year" class="form-control" required>
-                    {% for year in year_range %}
-                        <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>
+                    {% for year in available_years %}
+                        <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>
                             {{ year }}
                         </option>
                     {% endfor %}

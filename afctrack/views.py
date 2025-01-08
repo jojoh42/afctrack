@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
 from afat.models import FatLink, Fat
 from datetime import datetime
+from calendar import month_name
 
 # Doctrine points
 POINTS = {
@@ -26,6 +27,9 @@ def index(request):
     available_months = list(range(1, 13))  # January (1) to December (12)
     current_year = datetime.now().year
     available_years = list(range(current_year - 5, current_year + 1))  # Last 5 years to the current year
+
+    # Create a dictionary for month names
+    month_names = {i: month_name[i] for i in range(1, 13)}
 
     # Get the primary keys of users in the "jfc" or "fc" groups
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
@@ -92,6 +96,7 @@ def index(request):
         "available_years": available_years,
         "selected_month": selected_month,
         "selected_year": selected_year,
+        "month_names": month_names,  # Pass the month names to the template
     }
 
     # Render the template with the context
