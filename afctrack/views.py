@@ -1,5 +1,6 @@
 import calendar
 from datetime import datetime
+from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render
 from django.contrib.auth.models import User
 from django.db.models import Count
@@ -11,6 +12,9 @@ POINTS = {
     'Strat OP': 1,
     'Hive': 1.5
 }
+
+@login_required
+@permission_required("afctrack.basic_access")
 
 def get_fleet_counts_and_payment(budget, selected_month, selected_year):
     """

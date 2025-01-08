@@ -11,6 +11,16 @@ POINTS = {
     'Hive': 1.5
 }
 
+class General(models.Model):
+    """Meta model for app permissions"""
+
+    class Meta:
+        """Meta definitions"""
+
+        managed = False
+        default_permissions = ()
+        permissions = (("basic_access", "Can access this app"),)
+
 def get_current_month_and_year():
     """
     Helper function to get the current month and year.
