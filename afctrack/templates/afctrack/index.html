@@ -16,7 +16,7 @@
                 type="number"
                 id="budget"
                 name="budget"
-                value="{{ budget }}"
+                value="3000000000"  <!-- Default value -->
                 min="0"
                 step="100000000"
                 class="form-control"
@@ -41,7 +41,7 @@
                         <tr>
                             <td>{{ player_name }}</td>
                             <td>{{ data.total_fleet_count }}</td>
-                            <td>{{ data.payment|intcomma }}</td> <!-- Display payment -->
+                            <td>{{ data.payment|intcomma }}</td> <!-- Format payment -->
                         </tr>
                     {% endfor %}
                 </tbody>
