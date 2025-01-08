@@ -251,7 +251,7 @@ def fleet_type_amount(request):
     # Create a list of years (current year and previous 5 years, for example)
     available_years = list(range(current_year - 5, current_year + 1))
 
-    # Get the fleet type counts and average participants
+    # Get the fleet counts by type instead of doctrine
     fleet_type_counts = get_fleet_type_amount(selected_month, selected_year)
 
     # Pass data to the template
