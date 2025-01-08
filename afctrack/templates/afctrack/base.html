@@ -12,7 +12,6 @@
 {% endblock header_nav_brand %}
 
 {% block header_nav %}
-    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'index' %}">{% translate "Home" %}</a>
@@ -24,17 +23,9 @@
                     <li class="nav-item {% navactive request 'index' %}">
                         <a class="nav-link" href="{% url 'index' %}">{% translate "Home" %}</a>
                     </li>
-                    <li class="nav-item {% navactive request 'my_requests' %}">
-                        <a class="nav-link" href="{% url 'my_requests' %}">{% translate "My requests" %}</a>
+                    <li class="nav-item {% navactive request 'doctrine_amount' %}">
+                        <a class="nav-link" href="{% url 'doctrine_amount' %}">{% translate "Doctrine Amount" %}</a>
                     </li>
-                    {% if perms.afctrack.manage %}
-                        <li class="nav-item {% navactive request 'manage_requests' %}">
-                            <a class="nav-link" href="{% url 'manage_requests' %}">{% translate "Manage requests" %}</a>
-                        </li>
-                        <li class="nav-item {% navactive request 'inactive_users' %}">
-                            <a class="nav-link" href="{% url 'inactive_users' %}">{% translate "Inactive users" %}</a>
-                        </li>
-                    {% endif %}
                 </ul>
             </div>
         </div>
