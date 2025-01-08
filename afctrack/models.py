@@ -59,7 +59,7 @@ def get_fleet_counts_and_payment(budget):
         player_name = fleet['creator_id__username']
         fleet_type = fleet['fleet_type']
         fleet_count = fleet['fleet_count']
-        total_participants = fleet['total_participants']
+        total_participants = fleet['total_participants'] or 0  # Ensure total_participants is not None
 
         if player_name not in player_data:
             player_data[player_name] = {
