@@ -1,5 +1,5 @@
 from django.db import models
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django.contrib.auth.models import User
 from afat.models import FatLink, Fat
 from datetime import datetime
@@ -29,14 +29,15 @@ def get_fleet_counts_and_payment(budget):
     # Get the primary keys of users in the "jfc" or "fc" groups
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
 
-    # Filter FatLink by those users and the current month/year
+    # Filter FatLink by those users and the current month/year, annotate with participant count
     fleet_counts = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
         created__month=current_month,
         created__year=current_year
     ).values('creator_id__username', 'id', 'fleet_type')\
      .annotate(
-        fleet_count=Count('id')
+        fleet_count=Count('id'),
+        total_participants=Sum('fat__id')  # Sum of related Fat entries (replace with correct annotation if needed)
     ).order_by('creator_id__username', 'fleet_type')
 
     # Aggregate fleet counts, doctrine points, and participants
@@ -48,9 +49,7 @@ def get_fleet_counts_and_payment(budget):
         fleet_id = fleet['id']
         fleet_type = fleet['fleet_type']
         fleet_count = fleet['fleet_count']
-
-        # Count participants for this fleet from the afat_fat table
-        participant_count = Fat.objects.filter(fatlink_id=fleet_id).count()
+        participant_count = fleet['total_participants'] or 0
 
         # Get points for the doctrine
         fleet_points = POINTS.get(fleet_type, 0)
@@ -99,10 +98,9 @@ def get_fleet_count_by_doctrine():
     """
     current_month, current_year = get_current_month_and_year()
 
-    # Get the primary keys of users in the "jfc" or "fc" groups
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
 
-    # Filter FatLink by those users and the current month/year
+    # Query to get doctrine counts for the current month/year
     fleet_count_doctrine = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
         created__month=current_month,
@@ -122,6 +120,7 @@ def get_fleet_count_by_type():
 
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
 
+    # Query to get fleet type counts for the current month/year
     fleet_count_type = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
         created__month=current_month,

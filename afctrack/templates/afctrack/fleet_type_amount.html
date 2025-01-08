@@ -15,7 +15,7 @@
                 <select id="month" name="month" class="form-control">
                     {% for month in available_months %}
                         <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>
-                            {{ month }}
+                            {{ month|date:"F" }}
                         </option>
                     {% endfor %}
                 </select>
@@ -30,6 +30,11 @@
                         </option>
                     {% endfor %}
                 </select>
+            </div>
+
+            <div class="form-group">
+                <label for="budget">{% translate "Budget (ISK)" %}:</label>
+                <input type="number" id="budget" name="budget" class="form-control" value="{{ budget }}" min="1000000" step="1000000">
             </div>
 
             <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
