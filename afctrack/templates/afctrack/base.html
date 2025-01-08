@@ -1,38 +1,47 @@
-{% extends 'allianceauth/base-bs5.html' %}
-
+{% extends "allianceauth/base-bs5.html" %}
 {% load i18n %}
+{% load humanize %}
+{% load static %}
 
 {% block page_title %}
-    {% translate "afctrack Plugin" %}
-{% endblock %}
+    {% translate "Market Manager" %}
+{% endblock page_title %}
 
 {% block header_nav_brand %}
-    {% translate "afctrack Plugin" %}
+    {% translate "Market Manager" %}
 {% endblock header_nav_brand %}
 
-{% block header_nav %}
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'index' %}">{% translate "Home" %}</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="{% translate 'Toggle navigation' %}">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'index' %}">{% translate "Home" %}</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/doctrine_amount/' %}active{% endif %}" href="{% url 'doctrine_amount' %}">{% translate "Doctrine Amount" %}</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-{% endblock header_nav %}
+{% block header_nav_collapse_left %}
+    <ul class="nav-item">
+        {% include "marketmanager/marketbrowser/search-bs5.html" %}
+    </ul>
+    <ul class="nav-item dropdown">
+        {% include "marketmanager/marketbrowser/region_selector-bs5.html" %}
+    </ul>
+{% endblock header_nav_collapse_left %}
+
+{% block header_nav_collapse_right %}
+    <li class="nav-item">
+        <a href="{% url 'marketmanager:add_char' %}" class="nav-link">{% translate "Add Character Token" %}</a>
+    </li>
+    <li class="nav-item">
+        <a href="{% url 'marketmanager:add_corp' %}" class="nav-link">{% translate "Add Corporate Token" %}</a>
+    </li>
+    <li class="nav-item">
+        <a href="{% url 'marketmanager:marketwatches' %}" class="nav-link">{% translate "Market Watch Status" %}</a>
+    </li>
+{% endblock header_nav_collapse_right %}
 
 {% block content %}
-    <div class="allianceauth-afctrack-plugin">
-        {% block details %}{% endblock %}
-    </div>
-{% endblock %}
+{% endblock content %}
+
+{% block extra_javascript %}
+    {% include "bundles/datatables-js-bs5.html" %}
+    {% include "bundles/jquery-ui-js.html" %}
+    {% include "bundles/moment-js.html" %}
+{% endblock extra_javascript %}
+
+{% block extra_css %}
+    {% include "bundles/datatables-css-bs5.html" %}
+    {% include "bundles/jquery-ui-css.html" %}
+{% endblock extra_css %}
