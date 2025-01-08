@@ -88,15 +88,16 @@ def get_fleet_counts_and_payment(budget):
 
     return player_payments
 
-
 def index(request):
-    # Get the current month number
+    # Get the current month and year
     current_month = datetime.now().month
-    # Get the month name
-    month_name = calendar.month_name[current_month]
+    current_year = datetime.now().year
 
     # Create a list of months (1 to 12)
     available_months = list(range(1, 13))  # months from 1 to 12
+
+    # Create a list of years (current year and previous 5 years, for example)
+    available_years = list(range(current_year - 5, current_year + 1))
 
     # Get the budget from GET parameters (default to 3 billion ISK)
     budget = int(request.GET.get('budget', 3000000000))
@@ -106,10 +107,13 @@ def index(request):
 
     # Pass data to the template
     context = {
-        'month_name': month_name,
-        'available_months': available_months,  # Pass the months to the template
+        'month_name': calendar.month_name[current_month],
+        'available_months': available_months,  # List of months
+        'available_years': available_years,    # List of years
         'player_payments': player_payments,
         'budget': budget,
+        'selected_month': current_month,  # Ensure selected month is highlighted
+        'selected_year': current_year,    # Ensure selected year is highlighted
     }
 
     return render(request, 'afctrack/index.html', context)
