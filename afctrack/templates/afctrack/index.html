@@ -1,5 +1,4 @@
 {% extends 'afctrack/base.html' %}
-{% load custom_filters %}
 {% load i18n %}
 {% load humanize %}
 
@@ -56,7 +55,7 @@
         </form>
         <hr />
 
-        {% if player_data %}
+        {% if player_payments %}
             <table class="table table-striped">
                 <thead>
                     <tr>
@@ -67,12 +66,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for player_name, data in player_data.items %}
+                    {% for player in player_payments %}
                         <tr>
-                            <td>{{ player_name }}</td>
-                            <td>{{ data.total_fleet_count }}</td>
-                            <td>{{ data.avg_participants|floatformat:1 }}</td> <!-- Display avg participants -->
-                            <td>{{ data.payment|intcomma }}</td> <!-- Format payment -->
+                            <td>{{ player.player_name }}</td>
+                            <td>{{ player.fleet_count }}</td>
+                            <td>{{ player.avg_participants|floatformat:1 }}</td> <!-- Display avg participants -->
+                            <td>{{ player.payment|intcomma }}</td> <!-- Format payment -->
                         </tr>
                     {% endfor %}
                 </tbody>

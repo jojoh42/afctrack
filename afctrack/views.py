@@ -3,6 +3,7 @@ from datetime import datetime
 from django.shortcuts import render
 from django.contrib.auth.models import User
 from django.db.models import Count
+from django.utils import timezone
 from .models import FatLink, Fat
 
 # Doctrine points
@@ -87,47 +88,6 @@ def get_fleet_counts_and_payment(budget):
 
     return player_payments
 
-
-def get_fleet_count_by_doctrine():
-    """
-    Get doctrine counts for the current month/year and return the results as a list of dictionaries.
-    """
-    current_month = datetime.now().month
-    current_year = datetime.now().year
-
-    # Get the primary keys of users in the "jfc" or "fc" groups
-    fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
-
-    # Filter FatLink by those users and the current month/year
-    fleet_count_doctrine = FatLink.objects.filter(
-        creator_id__in=fc_users_ids,
-        created__month=current_month,
-        created__year=current_year
-    ).values('doctrine')\
-     .annotate(doctrine_count=Count('id'))\
-     .order_by('-doctrine_count')
-
-    return fleet_count_doctrine
-
-
-def get_fleet_count_by_type():
-    """
-    Get fleet type counts for the current month/year and return the results as a list of dictionaries.
-    """
-    current_month = datetime.now().month
-    current_year = datetime.now().year
-
-    fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
-
-    fleet_count_type = FatLink.objects.filter(
-        creator_id__in=fc_users_ids,
-        created__month=current_month,
-        created__year=current_year
-    ).values('fleet_type')\
-     .annotate(type_count=Count('id'))\
-     .order_by('-type_count')
-
-    return fleet_count_type
 
 def index(request):
     # Get the current month number
