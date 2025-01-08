@@ -1,10 +1,9 @@
-from django.shortcuts import render
-from django.db.models import Count
-from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib.auth.models import User
-from afat.models import FatLink, Fat
+import calendar
 from datetime import datetime
-from calendar import month_name
+from django.shortcuts import render
+from django.contrib.auth.models import User
+from django.db.models import Count
+from .models import FatLink, Fat
 
 # Doctrine points
 POINTS = {
@@ -13,32 +12,23 @@ POINTS = {
     'Hive': 1.5
 }
 
-@login_required
-@permission_required("afctrack.fc_access", raise_exception=True)
-def index(request):
+def get_fleet_counts_and_payment(budget):
     """
-    Index view that displays fleet counts per player and includes a month/year selector.
+    Get fleet counts and calculate the payment for each user based on their fleet count, doctrine, and participants.
+    Returns a list of dictionaries with player names, payments, and average participants.
     """
-    # Get the selected month and year, or default to the current month and year
-    selected_month = int(request.GET.get('month', datetime.now().month))
-    selected_year = int(request.GET.get('year', datetime.now().year))
-
-    # Get a list of available months and years for the dropdown
-    available_months = list(range(1, 13))  # January (1) to December (12)
+    # Get the current month and year
+    current_month = datetime.now().month
     current_year = datetime.now().year
-    available_years = list(range(current_year - 5, current_year + 1))  # Last 5 years to the current year
-
-    # Create a dictionary for month names
-    month_names = {i: month_name[i] for i in range(1, 13)}
 
     # Get the primary keys of users in the "jfc" or "fc" groups
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
 
-    # Filter FatLink by those users and the selected month/year
+    # Filter FatLink by those users and the current month/year
     fleet_counts = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
-        created__month=selected_month,
-        created__year=selected_year
+        created__month=current_month,
+        created__year=current_year
     ).values('creator_id__username', 'id', 'fleet_type')\
      .annotate(
         fleet_count=Count('id')
@@ -74,7 +64,6 @@ def index(request):
         total_fleet_points += fleet_points * fleet_count
 
     # Calculate ISK per point if the total score is greater than 0
-    budget = int(request.GET.get('budget', 3000000000))
     if total_fleet_points > 0:
         isk_per_point = budget / total_fleet_points
         round_isk_per_point = round(isk_per_point)
@@ -83,21 +72,80 @@ def index(request):
         round_isk_per_point = round(isk_per_point)
 
     # Calculate the payment for each player
+    player_payments = []
     for player_name, data in player_data.items():
         # Calculate the payment based on the doctrine points
-        data['payment'] = data['total_fleet_points'] * round_isk_per_point
+        payment = data['total_fleet_points'] * round_isk_per_point
         # Calculate the average participants per fleet
-        data['avg_participants'] = data['total_participants'] / data['total_fleet_count'] if data['total_fleet_count'] > 0 else 0
+        avg_participants = data['total_participants'] / data['total_fleet_count'] if data['total_fleet_count'] > 0 else 0
+        player_payments.append({
+            'player_name': player_name,
+            'fleet_count': data['total_fleet_count'],
+            'avg_participants': avg_participants,
+            'payment': payment,
+        })
 
-    # Prepare the context for rendering the template
+    return player_payments
+
+
+def get_fleet_count_by_doctrine():
+    """
+    Get doctrine counts for the current month/year and return the results as a list of dictionaries.
+    """
+    current_month = datetime.now().month
+    current_year = datetime.now().year
+
+    # Get the primary keys of users in the "jfc" or "fc" groups
+    fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
+
+    # Filter FatLink by those users and the current month/year
+    fleet_count_doctrine = FatLink.objects.filter(
+        creator_id__in=fc_users_ids,
+        created__month=current_month,
+        created__year=current_year
+    ).values('doctrine')\
+     .annotate(doctrine_count=Count('id'))\
+     .order_by('-doctrine_count')
+
+    return fleet_count_doctrine
+
+
+def get_fleet_count_by_type():
+    """
+    Get fleet type counts for the current month/year and return the results as a list of dictionaries.
+    """
+    current_month = datetime.now().month
+    current_year = datetime.now().year
+
+    fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
+
+    fleet_count_type = FatLink.objects.filter(
+        creator_id__in=fc_users_ids,
+        created__month=current_month,
+        created__year=current_year
+    ).values('fleet_type')\
+     .annotate(type_count=Count('id'))\
+     .order_by('-type_count')
+
+    return fleet_count_type
+
+def index(request):
+    # Get the current month number
+    current_month = datetime.now().month
+    # Get the month name
+    month_name = calendar.month_name[current_month]
+
+    # Get the budget from GET parameters (default to 3 billion ISK)
+    budget = int(request.GET.get('budget', 3000000000))
+
+    # Get the fleet counts and payments based on the budget
+    player_payments = get_fleet_counts_and_payment(budget)
+
+    # Pass data to the template
     context = {
-        "player_data": player_data,  # Pass the aggregated player data to the template
-        "available_months": available_months,
-        "available_years": available_years,
-        "selected_month": selected_month,
-        "selected_year": selected_year,
-        "month_names": month_names,  # Pass the month names to the template
+        'month_name': month_name,
+        'player_payments': player_payments,
+        'budget': budget,
     }
 
-    # Render the template with the context
     return render(request, 'afctrack/index.html', context)

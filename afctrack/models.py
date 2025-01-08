@@ -1,8 +1,7 @@
 from django.db import models
-from django.db.models import Count, Avg
+from django.db.models import Count
 from django.contrib.auth.models import User
 from afat.models import FatLink, Fat
-from django.conf import settings
 from datetime import datetime
 
 # Doctrine points
@@ -12,14 +11,20 @@ POINTS = {
     'Hive': 1.5
 }
 
+def get_current_month_and_year():
+    """
+    Helper function to get the current month and year.
+    """
+    current_month = datetime.now().month
+    current_year = datetime.now().year
+    return current_month, current_year
+
 def get_fleet_counts_and_payment(budget):
     """
     Get fleet counts and calculate the payment for each user based on their fleet count, doctrine, and participants.
     Returns a list of dictionaries with player names, payments, and average participants.
     """
-    # Get the current month and year
-    current_month = datetime.now().month
-    current_year = datetime.now().year
+    current_month, current_year = get_current_month_and_year()
 
     # Get the primary keys of users in the "jfc" or "fc" groups
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
@@ -92,8 +97,7 @@ def get_fleet_count_by_doctrine():
     """
     Get doctrine counts for the current month/year and return the results as a list of dictionaries.
     """
-    current_month = datetime.now().month
-    current_year = datetime.now().year
+    current_month, current_year = get_current_month_and_year()
 
     # Get the primary keys of users in the "jfc" or "fc" groups
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
@@ -114,8 +118,7 @@ def get_fleet_count_by_type():
     """
     Get fleet type counts for the current month/year and return the results as a list of dictionaries.
     """
-    current_month = datetime.now().month
-    current_year = datetime.now().year
+    current_month, current_year = get_current_month_and_year()
 
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
 
