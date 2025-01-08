@@ -260,14 +260,15 @@ def fleet_type_amount(request):
     # Get the fleet type counts and average participants
     fleet_data = get_fleet_type_amount(selected_month, selected_year)
 
-    # Pass data to the template
+    # Pass data to the template, change fleet_data to fleet_type_counts
     context = {
         'month_name': calendar.month_name[selected_month],
         'available_months': available_months,  # List of months
         'available_years': available_years,    # List of years
-        'fleet_data': fleet_data,
+        'fleet_type_counts': fleet_data,  # Change fleet_data to fleet_type_counts
         'selected_month': selected_month,  # Ensure selected month is highlighted
         'selected_year': selected_year,    # Ensure selected year is highlighted
     }
 
     return render(request, "afctrack/fleet_type_amount.html", context)
+
