@@ -175,6 +175,8 @@ def get_fleet_type_amount(selected_month, selected_year):
 
     return fleet_data
 
+@login_required
+@permission_required("afctrack.view_fleet_data")
 def index(request):
     # Get the current month and year
     current_month = datetime.now().month
@@ -210,6 +212,8 @@ def index(request):
     return render(request, 'afctrack/index.html', context)
 
 
+@login_required
+@permission_required("afctrack.view_doctrine_data")
 def doctrine_amount(request):
     # Get the current month and year
     current_month = datetime.now().month
@@ -240,6 +244,9 @@ def doctrine_amount(request):
 
     return render(request, "afctrack/doctrine_amount.html", context)
 
+
+@login_required
+@permission_required("afctrack.view_fleet_type_data")
 def fleet_type_amount(request):
     # Get the current month and year
     current_month = datetime.now().month
