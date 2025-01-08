@@ -48,7 +48,7 @@ def get_fleet_counts_and_payment(budget):
     ).values('creator_id__username', 'id', 'fleet_type')\
      .annotate(
         fleet_count=Count('id'),
-        total_participants=Sum('fat__id')  # Sum of related Fat entries (replace with correct annotation if needed)
+        total_participants=Sum('afat_fats__id')  # Correct field name for related Fat entries
     ).order_by('creator_id__username', 'fleet_type')
 
     # Aggregate fleet counts, doctrine points, and participants
