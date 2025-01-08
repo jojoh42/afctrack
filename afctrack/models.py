@@ -50,7 +50,7 @@ def get_fleet_counts_and_payment(budget):
     ).values('creator_id__username', 'id', 'fleet_type')\
      .annotate(
         fleet_count=Count('id'),
-        total_participants=Sum('fat__participants')  # Ensure correct field name for related Fat entries
+        total_participants=Sum('afat_fats__participants')  # Ensure correct field name for related Fat entries
     ).order_by('creator_id__username', 'fleet_type')
     print(f"Fleet Counts: {fleet_counts}")
 
