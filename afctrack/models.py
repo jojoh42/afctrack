@@ -120,7 +120,6 @@ def get_fleet_count_by_type():
 
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
 
-    # Query to get fleet type counts for the current month/year
     fleet_count_type = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
         created__month=current_month,
@@ -129,4 +128,4 @@ def get_fleet_count_by_type():
      .annotate(type_count=Count('id'))\
      .order_by('-type_count')
 
-    return fleet_count_type
+    return list(fleet_count_type)  # This will convert queryset to a list
