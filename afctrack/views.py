@@ -3,7 +3,6 @@ from datetime import datetime
 from django.shortcuts import render
 from django.contrib.auth.models import User
 from django.db.models import Count
-from django.utils import timezone
 from .models import FatLink, Fat
 
 # Doctrine points
@@ -13,19 +12,19 @@ POINTS = {
     'Hive': 1.5
 }
 
-def get_fleet_counts_and_payment(budget):
+def get_fleet_counts_and_payment(budget, selected_month, selected_year):
     """
     Get fleet counts and calculate the payment for each user based on their fleet count, doctrine, and participants.
     Returns a list of dictionaries with player names, payments, and average participants.
     """
-    # Get the current month and year
-    current_month = datetime.now().month
-    current_year = datetime.now().year
+    # Use the selected month and year, or default to current
+    current_month = selected_month
+    current_year = selected_year
 
     # Get the primary keys of users in the "jfc" or "fc" groups
     fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
 
-    # Filter FatLink by those users and the current month/year
+    # Filter FatLink by those users and the selected month/year
     fleet_counts = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
         created__month=current_month,
@@ -88,10 +87,15 @@ def get_fleet_counts_and_payment(budget):
 
     return player_payments
 
+
 def index(request):
     # Get the current month and year
     current_month = datetime.now().month
     current_year = datetime.now().year
+
+    # Get the selected month and year from GET parameters, default to current if not provided
+    selected_month = int(request.GET.get('month', current_month))
+    selected_year = int(request.GET.get('year', current_year))
 
     # Create a list of months (1 to 12)
     available_months = list(range(1, 13))  # months from 1 to 12
@@ -102,18 +106,18 @@ def index(request):
     # Get the budget from GET parameters (default to 3 billion ISK)
     budget = int(request.GET.get('budget', 3000000000))
 
-    # Get the fleet counts and payments based on the budget
-    player_payments = get_fleet_counts_and_payment(budget)
+    # Get the fleet counts and payments based on the selected month, year, and budget
+    player_payments = get_fleet_counts_and_payment(budget, selected_month, selected_year)
 
     # Pass data to the template
     context = {
-        'month_name': calendar.month_name[current_month],
+        'month_name': calendar.month_name[selected_month],
         'available_months': available_months,  # List of months
         'available_years': available_years,    # List of years
         'player_payments': player_payments,
         'budget': budget,
-        'selected_month': current_month,  # Ensure selected month is highlighted
-        'selected_year': current_year,    # Ensure selected year is highlighted
+        'selected_month': selected_month,  # Ensure selected month is highlighted
+        'selected_year': selected_year,    # Ensure selected year is highlighted
     }
 
     return render(request, 'afctrack/index.html', context)
