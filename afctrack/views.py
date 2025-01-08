@@ -251,36 +251,6 @@ def fleet_type_amount(request):
     # Create a list of years (current year and previous 5 years, for example)
     available_years = list(range(current_year - 5, current_year + 1))
 
-    # Get the doctrine counts and average participants
-    doctrine_counts = get_doctrine_counts(selected_month, selected_year)
-
-    # Pass data to the template
-    context = {
-        'month_name': calendar.month_name[selected_month],
-        'available_months': available_months,  # List of months
-        'available_years': available_years,    # List of years
-        'doctrine_counts': doctrine_counts,
-        'selected_month': selected_month,  # Ensure selected month is highlighted
-        'selected_year': selected_year,    # Ensure selected year is highlighted
-    }
-
-    return render(request, "afctrack/doctrine_amount.html", context)
-
-def fleet_type_amount(request):
-    # Get the current month and year
-    current_month = datetime.now().month
-    current_year = datetime.now().year
-
-    # Get the selected month and year from GET parameters, default to current if not provided
-    selected_month = int(request.GET.get('month', current_month))
-    selected_year = int(request.GET.get('year', current_year))
-
-    # Create a list of months (1 to 12)
-    available_months = list(range(1, 13))  # months from 1 to 12
-
-    # Create a list of years (current year and previous 5 years, for example)
-    available_years = list(range(current_year - 5, current_year + 1))
-
     # Get the fleet type counts and average participants
     fleet_type_counts = get_fleet_type_amount(selected_month, selected_year)
 
