@@ -1,18 +1,3 @@
-from django.shortcuts import render
-from django.db.models import Count
-from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib.auth.models import User
-from afat.models import FatLink
-from django.conf import settings
-from datetime import datetime
-
-# Doctrine points
-POINTS = {
-    'PCT/Roam': 0.5,
-    'Strat OP': 1,
-    'Hive': 1.5
-}
-
 @login_required
 @permission_required("afctrack.fc_access", raise_exception=True)
 def index(request):
@@ -50,20 +35,16 @@ def index(request):
             player_data[player_name] = {
                 'total_fleet_count': 0,
                 'total_fleet_points': 0,
-                'fleet_count': 0,  # Used for accumulating total fleet count
-                'fleet_points': 0   # Used for accumulating total points
             }
 
         # Accumulate fleet counts and points for the player
         player_data[player_name]['total_fleet_count'] += fleet_count
         player_data[player_name]['total_fleet_points'] += fleet_points * fleet_count
 
-    # Now that we have the total fleet counts and points for each player, 
-    # calculate payments for each player.
+    # Calculate total score and ISK per point
     total_score = sum(player['total_fleet_points'] for player in player_data.values())
     budget = int(request.GET.get('budget', 3000000000))
 
-    # Calculate ISK per point if the total score is greater than 0
     if total_score > 0:
         isk_per_point = budget / total_score
         round_isk_per_point = round(isk_per_point)
@@ -78,6 +59,7 @@ def index(request):
     # Prepare the context for rendering the template
     context = {
         "player_data": player_data,  # Pass the aggregated player data to the template
+        "budget": budget,  # Include the budget in the context for the form
     }
 
     # Render the template with the context
