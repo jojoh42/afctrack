@@ -19,7 +19,7 @@ def get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
     current_year = selected_year
 
     # Get the primary keys of users in the "jfc" or "fc" groups
-    fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
+    fc_users_ids = User.objects.filter(groups__name__in=["junior fc", "fc"]).values_list('id', flat=True)
 
     # Filter FatLink by those users and the selected month/year
     fleet_counts = FatLink.objects.filter(
