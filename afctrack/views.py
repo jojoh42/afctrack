@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.db.models import Count, Sum
 from afat.models import FatLink, Fat
 from .models import POINTS
+from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS
 
 @login_required
 @permission_required("afctrack.basic_access")
@@ -19,8 +20,10 @@ def get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
     current_year = selected_year
 
     # Get the primary keys of users in the "jfc" or "fc" groups
-    fc_users_ids = User.objects.filter(groups__name__in=["junior fc", "fc"]).values_list('id', flat=True)
+    #fc_users_ids = User.objects.filter(groups__name__in=["junior fc", "fc"]).values_list('id', flat=True)
 
+    fc_users_ids = User.objects.filter(groups__name__in=AFCTRACK_FC_GROUPS).values_list('id', flat=True)
+    
     # Filter FatLink by those users and the selected month/year
     fleet_counts = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
@@ -88,7 +91,8 @@ def get_doctrine_counts(selected_month, selected_year):
     Get doctrine counts and average participants for the selected month/year.
     """
     # Get the primary keys of users in the "jfc" or "fc" groups
-    fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc"]).values_list('id', flat=True)
+    #fc_users_ids = User.objects.filter(groups__name__in=["junior fc", "fc"]).values_list('id', flat=True)
+    fc_users_ids = User.objects.filter(groups__name__in=AFCTRACK_FC_GROUPS).values_list('id', flat=True)
 
     # Filter FatLink by those users and the selected month/year
     doctrine_counts = FatLink.objects.filter(
@@ -131,7 +135,8 @@ def get_fleet_type_amount(selected_month, selected_year):
     Get fleet type counts and average participants for the selected month/year.
     """
     # Get the primary keys of users in the "jfc" or "fc" groups
-    fc_users_ids = User.objects.filter(groups__name__in=["jfc", "fc", "Mining Officer"]).values_list('id', flat=True)
+    #fc_users_ids = User.objects.filter(groups__name__in=["junior fc", "fc", "Mining Officer"]).values_list('id', flat=True)
+    fc_users_ids = User.objects.filter(groups__name__in=AFCTRACK_FLEET_TYPE_GROUPS).values_list('id', flat=True)
 
     # Filter FatLink by fleet_type and selected month/year
     fleet_count_type = FatLink.objects.filter(
