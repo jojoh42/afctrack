@@ -15,7 +15,7 @@ from django.urls import path
 from afat.models import FatLink, Doctrine  # Fleet gibt es nicht, daher nutzen wir FatLink
 from esi.clients import esi_client_factory
 from esi.decorators import token_required
-from fittings.models import FittingsDoctrine
+from fittings.models import Doctrine
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS
 from .models import FittingsDoctrine
