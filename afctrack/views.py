@@ -210,9 +210,6 @@ def get_latest_esi_token(user_id):
     else:
         return None
 
-
-@login_required
-@permission_required("afctrack.basic_access")
 def update_fleet_motd(request):
     doctrines = FittingsDoctrine.objects.all()
     motd = ""
@@ -230,16 +227,16 @@ def update_fleet_motd(request):
     if request.method == "POST":
         fleet_boss = request.POST.get("fleet_boss")
         fleet_name = request.POST.get("fleet_name")
-        doctrine_id = request.POST.get("doctrine")
+        doctrine_name = request.POST.get("doctrine")
         fleet_type = request.POST.get("fleet_type")
         comms = request.POST.get("comms")
 
-        if not all([fleet_boss, fleet_name, doctrine_id, fleet_type, comms]):
+        if not all([fleet_boss, fleet_name, doctrine_name, fleet_type, comms]):
             messages.error(request, "Alle Felder sind erforderlich.")
             return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
 
         try:
-            doctrine = FittingsDoctrine.objects.get(id=doctrine_id)
+            doctrine = FittingsDoctrine.objects.get(name=doctrine_name)
             doctrine_link = f"http://127.0.0.1:8000/fittings/doctrine/{doctrine.id}"
         except FittingsDoctrine.DoesNotExist:
             messages.error(request, "Gewählte Doctrine existiert nicht.")
