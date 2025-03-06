@@ -238,7 +238,7 @@ def start_fleet(request):
         }
 
         # **MOTD-Update-Funktion aufrufen**
-        return redirect("afctrack:update_fleet_motd", fleet_data=fleet_data)
+        return redirect("afctrack:update_fleet_motd", fleet_boss=fleet_boss, doctrine_name=doctrine_name, fleet_type=fleet_type, comms=comms)
 
     return render(request, "afctrack/start_fleet.html", {
         "doctrines": doctrines,
