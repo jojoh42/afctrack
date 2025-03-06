@@ -12,7 +12,6 @@ from django.shortcuts import redirect
 from django.db import connection
 from django.http import JsonResponse
 from django.urls import path
-from allianceauth.eveonline.auth.views import eve_sso_login
 from afat.models import FatLink, Fat
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS
