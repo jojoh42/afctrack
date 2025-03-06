@@ -1,0 +1,79 @@
+{% extends 'afctrack/base.html' %}
+{% load i18n %}
+{% load humanize %}
+
+{% block details %}
+<!-- Fleet Management Panel -->
+<div class="panel panel-info">
+    <div class="panel-heading">
+        <h3 class="panel-title">{% translate "Fleet Management" %}</h3>
+    </div>
+    <div class="panel-body">
+        <!-- Fleet Input Form -->
+        <form method="post">
+            {% csrf_token %}
+
+            <!-- Fleet Boss Name -->
+            <div class="form-group">
+                <label for="fleet_boss">{% translate "Fleet Boss (EVE Character)" %}:</label>
+                <input
+                    type="text"
+                    id="fleet_boss"
+                    name="fleet_boss"
+                    class="form-control"
+                    required
+                />
+            </div>
+
+            <!-- Fleet Name -->
+            <div class="form-group">
+                <label for="fleet_name">{% translate "Fleet Name" %}:</label>
+                <input
+                    type="text"
+                    id="fleet_name"
+                    name="fleet_name"
+                    class="form-control"
+                    required
+                />
+            </div>
+            <div class="form-group">
+                <label for="doctrine">{% translate "Setup / Doctrine" %}:</label>
+                <select id="doctrine" name="doctrine" class="form-control" required>
+                    <option value="">{% translate "Select Doctrine" %}</option>
+                    {% for doctrine in doctrines %}
+                        <option value="{{ doctrine.name }}">{{ doctrine.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Fleet Type -->
+            <div class="form-group">
+                <label for="fleet_type">{% translate "Fleet Type" %}:</label>
+                <select id="fleet_type" name="fleet_type" class="form-control" required>
+                    <option value="Peacetime">{% translate "Peacetime" %}</option>
+                    <option value="StratOP">{% translate "StratOP" %}</option>
+                    <option value="Mining">{% translate "Mining" %}</option>
+                    <option value="Hive">{% translate "Hive" %}</option>
+                </select>
+            </div>
+
+             <!-- Fleet Type -->
+             <div class="form-group">
+                <label for="comms">{% translate "Comms" %}:</label>
+                <select id="comms" name="comms" class="form-control" required>
+                    <option value="https://shorturl.at/Kg2ka">{% translate "OP1" %}</option>
+                    <option value="https://shorturl.at/Kg2ka">{% translate "OP2" %}</option>
+                    <option value="https://shorturl.at/Kg2ka">{% translate "OP3" %}</option>
+                    <option value="https://shorturl.at/Kg2ka">{% translate "OP4" %}</option>
+                    <option value="https://shorturl.at/Kg2ka">{% translate "OP5" %}</option>
+                </select>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
+                {% translate "Submit Fleet" %}
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

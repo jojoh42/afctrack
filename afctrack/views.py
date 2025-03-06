@@ -7,6 +7,7 @@ from django.db.models import Count, Sum
 from afat.models import FatLink, Fat
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS
+from .models import FittingsDoctrine
 
 @login_required
 @permission_required("afctrack.basic_access")
@@ -194,6 +195,9 @@ def index(request):
 
     # Get the fleet counts and payments based on the selected month, year, and budget
     player_payments = get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
+
+    # Fetch all doctrines from the database
+    doctrines = FittingsDoctrine.objects.all()
 
     # Pass data to the template
     context = {
