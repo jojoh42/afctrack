@@ -12,8 +12,7 @@ from django.shortcuts import redirect
 from django.db import connection
 from django.http import JsonResponse
 from django.urls import path
-from afat.models import FatLink, Fat
-from afat.models import Fleet
+from afat.models import FatLink, Doctrine  # Fleet gibt es nicht, daher nutzen wir FatLink
 from esi.clients import esi_client_factory
 from esi.decorators import token_required
 from fittings.models import FittingsDoctrine
@@ -197,46 +196,32 @@ def get_fleet_type_amount(selected_month, selected_year):
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(token):
-    """ Holt die aktuelle Flotten-ID, prüft die Doktrin und aktualisiert die MOTD. """
+    """ Holt die aktuelle Flotten-ID aus FatLink, prüft die Doktrin und aktualisiert die MOTD. """
     
-    # 1. Aktuelle Flotte holen
-    fleet = Fleet.objects.filter(is_active=True).order_by('-created_at').first()
-    if not fleet:
-        logger.warning("Keine aktive Flotte gefunden.")
+    # 1️⃣ **Aktuelle Flotte holen** (Wir nehmen die letzte erstellte, falls es mehrere gibt)
+    fatlink = FatLink.objects.filter(is_registered_on_esi=True).order_by('-created').first()
+    if not fatlink:
+        logger.warning("❌ Keine aktive Flotte (FatLink) gefunden.")
         return
 
-    fleet_id = fleet.fleet_id
-    fleet_boss = fleet.owner.character_name
-    commander_id = fleet.owner.character_id  # FC zKillboard Link ID
+    fleet_id = fatlink.esi_fleet_id
+    fleet_boss = fatlink.character.character_name  # Fleet Commander Name
+    doctrine_name = fatlink.doctrine  # Doctrine ist als String gespeichert
+    comms = "https://shorturl.at/Kg2ka"  # Standard Comms, falls nicht explizit gesetzt
     
-    # 2. ESI Client erstellen
-    esi = esi_client_factory(token=token)
-    
-    # 3. Flottendaten abrufen
-    try:
-        response = esi.Fleets.get_fleets_fleet_id(fleet_id=fleet_id).result()
-        if not response:
-            logger.error("Konnte keine Flotteninformationen abrufen.")
-            return
-    except Exception as e:
-        logger.exception(f"Fehler beim Abrufen der Flottendaten: {e}")
-        return
-
-    # 4. Doktrin abrufen
-    doctrine_name = fleet.doctrine  # Falls die Doctrine als einfacher String gespeichert wird
+    # 2️⃣ **Doctrine-Link aus Doctrine-Tabelle abrufen**
     doctrine_link = "N/A"
-
     if doctrine_name:
         try:
-            doctrine = FittingsDoctrine.objects.get(name=doctrine_name)
-            doctrine_link = f"http://127.0.0.1:8000/fittings/doctrine/{doctrine.id}"
-        except FittingsDoctrine.DoesNotExist:
-            logger.warning(f"Doktrin '{doctrine_name}' existiert nicht. Standard-Link wird verwendet.")
+            doctrine_obj = Doctrine.objects.get(name=doctrine_name)
+            doctrine_link = f"http://127.0.0.1:8000/fittings/doctrine/{doctrine_obj.id}"
+        except Doctrine.DoesNotExist:
+            logger.warning(f"⚠️ Doktrin '{doctrine_name}' existiert nicht. Standard-Link wird verwendet.")
 
-    # 5. Comms-Link holen (falls in der DB gespeichert)
-    comms = fleet.comms if hasattr(fleet, 'comms') else "https://shorturl.at/Kg2ka"
+    # 3️⃣ **ESI Client erstellen**
+    esi = esi_client_factory(token=token)
 
-    # 6. MOTD setzen
+    # 4️⃣ **Neue MOTD im gewünschten Format setzen**
     motd = f"""
     <font size="14" color="#ffff0000">Staging:</font>   
     <font size="14" color="#ffd98d00"><loc><a href="showinfo:35834//1034323745897">P-ZMZV</a></loc></font><br>
@@ -256,12 +241,12 @@ def update_fleet_motd(token):
     <font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font>
     """
 
-    # 7. MOTD über ESI setzen
+    # 5️⃣ **MOTD über ESI setzen**
     try:
         esi.Fleets.put_fleets_fleet_id(fleet_id=fleet_id, token=token, motd=motd)
-        logger.info(f"Flotten-MOTD erfolgreich geändert: {motd}")
+        logger.info(f"✅ Flotten-MOTD erfolgreich geändert: {motd}")
     except Exception as e:
-        logger.exception(f"Fehler beim Setzen der neuen MOTD: {e}")
+        logger.exception(f"❌ Fehler beim Setzen der neuen MOTD: {e}")
         return
 
 def index(request):
