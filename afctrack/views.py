@@ -194,6 +194,7 @@ def get_fleet_type_amount(selected_month, selected_year):
 
     return fleet_data
 
+
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(request, token):
     """ Holt die aktuelle Flotten-ID aus FatLink, prüft die Doktrin und aktualisiert die MOTD. """
@@ -202,11 +203,11 @@ def update_fleet_motd(request, token):
     fatlink = FatLink.objects.filter(is_registered_on_esi=True).order_by('-created').first()
     if not fatlink:
         logger.warning("❌ Keine aktive Flotte (FatLink) gefunden.")
-        return
+        return JsonResponse({"status": "error", "message": "Keine aktive Flotte gefunden"}, status=400)
 
     fleet_id = fatlink.esi_fleet_id
 
-    # 2️⃣ **Fleet Boss bestimmen (Fleet Commander)**
+    # 2️⃣ **Fleet Boss bestimmen**
     if hasattr(fatlink.creator, 'eve_character'):
         fleet_boss = fatlink.creator.eve_character.character_name
     elif hasattr(fatlink.creator, 'profile') and hasattr(fatlink.creator.profile, 'character_name'):
@@ -250,11 +251,14 @@ def update_fleet_motd(request, token):
 
     # 6️⃣ **MOTD über ESI setzen**
     try:
-        esi.Fleets.put_fleets_fleet_id_motd(fleet_id=fleet_id, token=token, motd={"motd": motd})
+        response = esi.Fleets.put_fleets_fleet_id(
+            fleet_id=fleet_id, token=token, new_settings={"motd": motd}
+        )
         logger.info(f"✅ Flotten-MOTD erfolgreich geändert: {motd}")
+        return JsonResponse({"status": "success", "message": "MOTD erfolgreich gesetzt", "esi_response": response}, status=200)
     except Exception as e:
         logger.exception(f"❌ Fehler beim Setzen der neuen MOTD: {e}")
-        return
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
 
 def index(request):
