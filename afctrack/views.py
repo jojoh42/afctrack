@@ -10,8 +10,8 @@ from django.db.models import Count, Sum
 from django.contrib import messages
 from django.shortcuts import redirect
 from django.db import connection
-from django.http import JsonResponse
-from django.urls import path
+from django.http import JsonResponse, HttpResponse
+from django.urls import path, reverse
 from afat.models import FatLink, Doctrine, Fat # Fleet gibt es nicht, daher nutzen wir FatLink
 from esi.clients import esi_client_factory
 from esi.decorators import token_required
@@ -195,8 +195,9 @@ def get_fleet_type_amount(selected_month, selected_year):
     return fleet_data
 
 def start_fleet(request):
-    """Ermöglicht das Erstellen einer neuen Flotte, ohne sie in der Datenbank zu speichern."""
 
+    """Handles the fleet creation form and updates the MOTD after submission."""
+    
     doctrines = Doctrine.objects.all()
     fleet_types = ["Peacetime", "StratOP", "Mining", "Hive"]
     comms_options = [
@@ -215,44 +216,29 @@ def start_fleet(request):
         comms = request.POST.get("comms")
 
         if not all([fleet_boss, fleet_name, doctrine_name, fleet_type, comms]):
-            messages.error(request, "❌ Alle Felder müssen ausgefüllt werden!")
+            messages.error(request, "❌ All fields must be filled!")
             return render(request, "afctrack/start_fleet.html", {
                 "doctrines": doctrines,
                 "fleet_types": fleet_types,
                 "comms_options": comms_options,
             })
 
-        try:
-            doctrine = Doctrine.objects.get(name=doctrine_name)
-        except Doctrine.DoesNotExist:
-            messages.error(request, "❌ Die ausgewählte Doktrin existiert nicht!")
-            return redirect("afctrack:start_fleet")
-
-        # **Ohne Datenbank: Flotten-Informationen nur temporär speichern**
-        fleet_data = {
-            "fleet_boss": fleet_boss,
-            "fleet_name": fleet_name,
-            "doctrine_name": doctrine_name,
-            "fleet_type": fleet_type,
-            "comms": comms
-        }
-
-        # **MOTD-Update-Funktion aufrufen**
-        return redirect(
-            "afctrack:update_fleet_motd",
-            fleet_boss=fleet_boss,
-            doctrine_name=doctrine_name,
-            fleet_type=fleet_type,
-            comms=comms
+        # Umkehrung der URL mit den Parametern im URL-Pfad
+        return HttpResponseRedirect(
+            reverse('afctrack:update_fleet_motd', kwargs={
+                'fleet_boss': fleet_boss,
+                'doctrine_name': doctrine_name,
+                'fleet_type': fleet_type,
+                'comms': comms
+            })
         )
-
 
     return render(request, "afctrack/start_fleet.html", {
         "doctrines": doctrines,
         "fleet_types": fleet_types,
         "comms_options": comms_options,
     })
-
+    
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(request, token, fleet_boss, doctrine_name, fleet_type, comms):
     """ Updates the MOTD for the fleet """
