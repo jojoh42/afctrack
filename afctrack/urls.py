@@ -7,5 +7,5 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('doctrine_amount/', views.doctrine_amount, name='doctrine_amount'),
     path('fleet_type_amount/', views.fleet_type_amount, name='fleet_type_amount'),
-    path('start_fleet/', views.update_fleet_motd, name='start_fleet'),
+    path('start_fleet/', views.start_fleet, name='start_fleet'),
 ]
