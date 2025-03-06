@@ -36,6 +36,8 @@
                     required
                 />
             </div>
+
+            <!-- Doctrine Auswahl -->
             <div class="form-group">
                 <label for="doctrine">{% translate "Setup / Doctrine" %}:</label>
                 <select id="doctrine" name="doctrine" class="form-control" required>
@@ -46,26 +48,23 @@
                 </select>
             </div>
 
-            <!-- Fleet Type -->
+            <!-- Fleet Type Auswahl -->
             <div class="form-group">
                 <label for="fleet_type">{% translate "Fleet Type" %}:</label>
                 <select id="fleet_type" name="fleet_type" class="form-control" required>
-                    <option value="Peacetime">{% translate "Peacetime" %}</option>
-                    <option value="StratOP">{% translate "StratOP" %}</option>
-                    <option value="Mining">{% translate "Mining" %}</option>
-                    <option value="Hive">{% translate "Hive" %}</option>
+                    {% for type in fleet_types %}
+                        <option value="{{ type }}">{{ type }}</option>
+                    {% endfor %}
                 </select>
             </div>
 
-             <!-- Fleet Type -->
-             <div class="form-group">
+            <!-- Comms Auswahl -->
+            <div class="form-group">
                 <label for="comms">{% translate "Comms" %}:</label>
                 <select id="comms" name="comms" class="form-control" required>
-                    <option value="https://shorturl.at/Kg2ka">{% translate "OP1" %}</option>
-                    <option value="https://shorturl.at/Kg2ka">{% translate "OP2" %}</option>
-                    <option value="https://shorturl.at/Kg2ka">{% translate "OP3" %}</option>
-                    <option value="https://shorturl.at/Kg2ka">{% translate "OP4" %}</option>
-                    <option value="https://shorturl.at/Kg2ka">{% translate "OP5" %}</option>
+                    {% for comm in comms_options %}
+                        <option value="{{ comm.url }}">{{ comm.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
 

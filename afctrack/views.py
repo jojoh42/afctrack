@@ -359,29 +359,47 @@ def fleet_type_amount(request):
 
     return render(request, "afctrack/fleet_type_amount.html", context)
 
-# def start_fleet(request):
-#     """
-#     View to handle fleet creation. Fetches doctrines and handles form submission.
-#     """
-#     doctrines = FittingsDoctrine.objects.all()  # Fetch doctrines from DB
+def start_fleet(request):
+    """Ermöglicht das Erstellen einer neuen Flotte über das Formular in `start_fleet.html`."""
+    
+    doctrines = Doctrine.objects.all()  # Alle verfügbaren Doctrines abrufen
+    fleet_types = ["Peacetime", "StratOP", "Mining", "Hive"]  # Fleet-Typen
+    comms_options = [
+        {"name": "OP1", "url": "https://shorturl.at/Kg2ka"},
+        {"name": "OP2", "url": "https://shorturl.at/Kg2ka"},
+        {"name": "OP3", "url": "https://shorturl.at/Kg2ka"},
+        {"name": "OP4", "url": "https://shorturl.at/Kg2ka"},
+        {"name": "OP5", "url": "https://shorturl.at/Kg2ka"},
+    ]
 
-#     if request.method == "POST":
-#         # Get form data
-#         fleet_boss = request.POST.get("fleet_boss")
-#         fleet_name = request.POST.get("fleet_name")
-#         doctrine = request.POST.get("doctrine")
-#         fleet_type = request.POST.get("fleet_type")
-#         comms = request.POST.get("comms")
+    if request.method == "POST":
+        fleet_boss = request.POST.get("fleet_boss")
+        fleet_name = request.POST.get("fleet_name")
+        doctrine_name = request.POST.get("doctrine")
+        fleet_type = request.POST.get("fleet_type")
+        comms = request.POST.get("comms")
 
-#         # Validate required fields
-#         if not (fleet_boss and fleet_name and doctrine and fleet_type):
-#             messages.error(request, "All fields are required.")
-#             return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
+        if not all([fleet_boss, fleet_name, doctrine_name, fleet_type, comms]):
+            messages.error(request, "❌ Alle Felder müssen ausgefüllt werden!")
+            return render(request, "afctrack/start_fleet.html", {
+                "doctrines": doctrines,
+                "fleet_types": fleet_types,
+                "comms_options": comms_options,
+            })
 
-#         # Process fleet creation logic (this part needs to be defined)
-#         # Example: Save to a model or trigger an action
-#         messages.success(request, f"Fleet '{fleet_name}' has been started successfully.")
+        try:
+            doctrine = Doctrine.objects.get(name=doctrine_name)
+        except Doctrine.DoesNotExist:
+            messages.error(request, "❌ Die ausgewählte Doktrin existiert nicht!")
+            return redirect("afctrack:start_fleet")
 
-#         return redirect("afctrack:index")  # Redirect to home after submission
+        # Hier könnte Code kommen, um die Flotte in der Datenbank zu speichern, falls nötig
 
-#     return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
+        messages.success(request, f"✅ Flotte '{fleet_name}' wurde erfolgreich erstellt!")
+        return redirect("afctrack:index")  # Weiterleitung zur Hauptseite nach erfolgreicher Erstellung
+
+    return render(request, "afctrack/start_fleet.html", {
+        "doctrines": doctrines,
+        "fleet_types": fleet_types,
+        "comms_options": comms_options,
+    })
