@@ -252,8 +252,9 @@ def update_fleet_motd(request, token):
     # 6️⃣ **MOTD über ESI setzen**
     try:
         response = esi.Fleets.put_fleets_fleet_id(
-            fleet_id=fleet_id, token=token, new_settings={"motd": motd}
-        )
+    fleet_id=fleet_id, token=token.access_token, new_settings={"motd": motd}
+)
+
         logger.info(f"✅ Flotten-MOTD erfolgreich geändert: {motd}")
         return JsonResponse({"status": "success", "message": "MOTD erfolgreich gesetzt", "esi_response": response}, status=200)
     except Exception as e:
