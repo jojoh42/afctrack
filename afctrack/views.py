@@ -211,20 +211,22 @@ def get_latest_esi_token(user_id):
 def refresh_esi_token(refresh_token):
     payload = {
         "grant_type": "refresh_token",
-        "refresh_token": refresh_token,
-        "client_id": "your_client_id",
-        "client_secret": "your_client_secret",
+        "refresh_token": refresh_token
     }
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Authorization": "Basic your_base64_encoded_clientid_clientsecret"
+    }
 
     response = requests.post("https://login.eveonline.com/v2/oauth/token", data=payload, headers=headers)
-    
+
     if response.status_code == 200:
         data = response.json()
         return data["access_token"]
     else:
-        logger.error(f"Token refresh failed: {response.status_code}, {response.text}")
+        logger.error(f"❌ Token refresh failed: {response.status_code}, {response.text}")
         return None
+
 
 
 def refresh_and_get_token(user_id):
