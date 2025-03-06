@@ -12,7 +12,7 @@ from django.shortcuts import redirect
 from django.db import connection
 from django.http import JsonResponse
 from django.urls import path
-from afat.models import FatLink, Doctrine, Fat, Fleet  # Fleet gibt es nicht, daher nutzen wir FatLink
+from afat.models import FatLink, Doctrine, Fat # Fleet gibt es nicht, daher nutzen wir FatLink
 from esi.clients import esi_client_factory
 from esi.decorators import token_required
 from fittings.models import Doctrine
@@ -195,8 +195,8 @@ def get_fleet_type_amount(selected_month, selected_year):
     return fleet_data
 
 def start_fleet(request):
-    """Handles the fleet creation form and updates the MOTD after submission."""
-    
+    """Ermöglicht das Erstellen einer neuen Flotte, ohne sie in der Datenbank zu speichern."""
+
     doctrines = Doctrine.objects.all()
     fleet_types = ["Peacetime", "StratOP", "Mining", "Hive"]
     comms_options = [
@@ -215,7 +215,7 @@ def start_fleet(request):
         comms = request.POST.get("comms")
 
         if not all([fleet_boss, fleet_name, doctrine_name, fleet_type, comms]):
-            messages.error(request, "❌ All fields must be filled!")
+            messages.error(request, "❌ Alle Felder müssen ausgefüllt werden!")
             return render(request, "afctrack/start_fleet.html", {
                 "doctrines": doctrines,
                 "fleet_types": fleet_types,
@@ -225,24 +225,20 @@ def start_fleet(request):
         try:
             doctrine = Doctrine.objects.get(name=doctrine_name)
         except Doctrine.DoesNotExist:
-            messages.error(request, "❌ The selected doctrine does not exist!")
+            messages.error(request, "❌ Die ausgewählte Doktrin existiert nicht!")
             return redirect("afctrack:start_fleet")
 
-        # 🛠️ FIX: Ensure a valid fleet object is assigned
-        fleet = Fleet.objects.create(name=fleet_name, fleet_boss=fleet_boss)
+        # **Ohne Datenbank: Flotten-Informationen nur temporär speichern**
+        fleet_data = {
+            "fleet_boss": fleet_boss,
+            "fleet_name": fleet_name,
+            "doctrine_name": doctrine_name,
+            "fleet_type": fleet_type,
+            "comms": comms
+        }
 
-        # **Store fleet data in FatLink**
-        fatlink = FatLink.objects.create(
-            creator=request.user,
-            doctrine=doctrine_name,
-            fleet_type=fleet_type,
-            esi_fleet_id=None,  # This might need a real ID later
-            fleet=fleet,  # ✅ This fixes the error
-            is_registered_on_esi=True
-        )
-
-        # Call `update_fleet_motd`
-        return redirect("afctrack:update_fleet_motd")
+        # **MOTD-Update-Funktion aufrufen**
+        return redirect("afctrack:update_fleet_motd", fleet_data=fleet_data)
 
     return render(request, "afctrack/start_fleet.html", {
         "doctrines": doctrines,
