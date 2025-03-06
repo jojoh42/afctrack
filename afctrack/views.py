@@ -207,52 +207,16 @@ def get_latest_esi_token(user_id):
         "refresh_token": row[2],
     } if row else None
 
-
-def refresh_esi_token(refresh_token):
-    payload = {
-        "grant_type": "refresh_token",
-        "refresh_token": refresh_token,
-        "client_id": "473549164dd24fa6bf91b703c4d9b0d8",
-        "client_secret": "cIfOdr5JLXMMLAzJSevDtKmLxFH7zpkfwoI4kTJt",
-    }
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-
-    response = requests.post("https://login.eveonline.com/v2/oauth/token", data=payload, headers=headers)
-    
-    if response.status_code == 200:
-        data = response.json()
-        return data["access_token"]
-    else:
-        logger.error(f"Token refresh failed: {response.status_code}, {response.text}")
-        return None
-
-
-
-
-def refresh_and_get_token(user_id):
-    token_data = get_latest_esi_token(user_id)
-    if not token_data:
-        return None
-
-    refreshed_token = refresh_esi_token(token_data["refresh_token"])
-    if refreshed_token:
-        return {
-            "access_token": refreshed_token,
-            "character_id": token_data["character_id"]
-        }
-
-    return None
-
 def update_fleet_motd(request):
     doctrines = FittingsDoctrine.objects.all()
     motd = ""
 
-    token_data = refresh_and_get_token(request.user.id)
+    token_data = get_latest_esi_token(request.user.id)
 
     if not token_data:
         logger.error(f"❌ Kein gültiger ESI Token gefunden für User {request.user.username}")
-        messages.error(request, "Bitte authentifiziere dich erneut mit deinem EVE Charakter.")
-        return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
+        messages.error(request, "Bitte logge dich erneut über EVE SSO ein.")
+        return redirect("eve_sso_login")  # Umleitung zur SSO-Login-Seite
 
     access_token = token_data['access_token']
     character_id = token_data['character_id']
@@ -278,12 +242,15 @@ def update_fleet_motd(request):
         headers = {"Authorization": f"Bearer {token_data['access_token']}"}
         fleet_response = requests.get(f"https://esi.evetech.net/latest/characters/{token_data['character_id']}/fleet/", headers=headers)
 
-        if fleet_response.status_code == 200:
-            fleet_id = fleet_response.json().get("fleet_id")
-        else:
+        if fleet_response.status_code == 403:
+            messages.error(request, "Dein Token hat nicht die erforderlichen Berechtigungen. Bitte logge dich erneut ein.")
+            return redirect("eve_sso_login")  # Benutzer erneut zur SSO-Login-Seite schicken
+        elif fleet_response.status_code != 200:
             messages.error(request, "Aktuelle Flotte konnte nicht abgerufen werden.")
             logger.error(f"ESI Fehler: {fleet_response.status_code}, {fleet_response.text}")
             return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
+
+        fleet_id = fleet_response.json().get("fleet_id")
 
         motd = f"""
         <font size="14" color="#ffff0000">Staging:</font>   
@@ -313,6 +280,7 @@ def update_fleet_motd(request):
             messages.error(request, f"Fehler beim Aktualisieren der MOTD. Statuscode: {response.status_code}")
 
     return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines, "motd": motd})
+
 
 
 def index(request):
