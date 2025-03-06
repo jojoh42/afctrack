@@ -205,11 +205,20 @@ def update_fleet_motd(request, token):
         return
 
     fleet_id = fatlink.esi_fleet_id
-    fleet_boss = fatlink.owner.character_name  # Falls `owner` das richtige Feld ist
+
+    # 2️⃣ **Fleet Boss bestimmen (Fleet Commander)**
+    if hasattr(fatlink, 'creator') and fatlink.creator:
+        fleet_boss = fatlink.creator.character_name  # Falls `creator` existiert
+    elif hasattr(fatlink, 'character') and fatlink.character:
+        fleet_boss = fatlink.character.character_name  # Falls `character` existiert
+    else:
+        logger.error("❌ Konnte den Fleet Commander nicht bestimmen!")
+        fleet_boss = "Unbekannt"
+
     doctrine_name = fatlink.doctrine or "Unbekannt"
     comms = "https://shorturl.at/Kg2ka"  # Standard Comms
 
-    # 2️⃣ **Doctrine-Link aus Doctrine-Tabelle abrufen**
+    # 3️⃣ **Doctrine-Link abrufen**
     doctrine_link = "N/A"
     try:
         doctrine_obj = Doctrine.objects.get(name=doctrine_name)
@@ -217,10 +226,10 @@ def update_fleet_motd(request, token):
     except Doctrine.DoesNotExist:
         logger.warning(f"⚠️ Doktrin '{doctrine_name}' existiert nicht. Standard-Link wird verwendet.")
 
-    # 3️⃣ **ESI Client erstellen**
+    # 4️⃣ **ESI Client erstellen**
     esi = esi_client_factory(token=token)
 
-    # 4️⃣ **Neue MOTD setzen**
+    # 5️⃣ **Neue MOTD setzen**
     motd = f"""
     <font size="14" color="#ffff0000">Staging:</font>   
     <font size="14" color="#ffd98d00"><loc><a href="showinfo:35834//1034323745897">P-ZMZV</a></loc></font><br>
@@ -240,7 +249,7 @@ def update_fleet_motd(request, token):
     <font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font>
     """
 
-    # 5️⃣ **MOTD über ESI setzen**
+    # 6️⃣ **MOTD über ESI setzen**
     try:
         esi.Fleets.put_fleets_fleet_id_motd(fleet_id=fleet_id, token=token, motd={"motd": motd})
         logger.info(f"✅ Flotten-MOTD erfolgreich geändert: {motd}")
