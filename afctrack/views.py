@@ -200,7 +200,7 @@ def update_fleet_motd(request):
     character_id = getattr(request.user.profile, "eve_character_id", None)
 
     if not access_token or not character_id:
-        logger.error("❌ No ESI Access Token or Character ID found for user: %s", request.user)
+        print(f"❌ No ESI Access Token or Character ID found for user: {request.user}")
         messages.error(request, "No valid ESI token found. Please reauthenticate.")
         return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
 
@@ -214,7 +214,7 @@ def update_fleet_motd(request):
 
         # Validate input fields
         if not all([fleet_boss, fleet_name, doctrine_id, fleet_type, comms]):
-            logger.warning("⚠️ Missing form data: %s", request.POST)
+            print(f"⚠️ Missing form data: {request.POST}")
             messages.error(request, "All fields are required.")
             return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
 
@@ -222,9 +222,9 @@ def update_fleet_motd(request):
         try:
             doctrine = FittingsDoctrine.objects.get(id=doctrine_id)
             doctrine_link = f"http://127.0.0.1:8000/fittings/doctrine/{doctrine.id}"
-            logger.info("✅ Doctrine Retrieved: %s (%s)", doctrine.name, doctrine_link)
+            print(f"✅ Doctrine Retrieved: {doctrine.name} ({doctrine_link})")
         except FittingsDoctrine.DoesNotExist:
-            logger.error("❌ Doctrine not found for ID: %s", doctrine_id)
+            print(f"❌ Doctrine not found for ID: {doctrine_id}")
             messages.error(request, "Selected doctrine does not exist.")
             return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
 
@@ -232,14 +232,14 @@ def update_fleet_motd(request):
         headers = {"Authorization": f"Bearer {access_token}"}
         fleet_response = requests.get(ESI_CHARACTER_FLEET_URL.format(character_id=character_id), headers=headers)
 
-        logger.info("🔍 Fetching Fleet ID for character: %s", character_id)
-        logger.debug("Fleet ID Response: %s", fleet_response.text)
+        print(f"🔍 Fetching Fleet ID for character: {character_id}")
+        print(f"Fleet ID Response: {fleet_response.text}")
 
         if fleet_response.status_code == 200:
             fleet_id = fleet_response.json().get("fleet_id")
-            logger.info("✅ Fleet ID Retrieved: %s", fleet_id)
+            print(f"✅ Fleet ID Retrieved: {fleet_id}")
         else:
-            logger.error("❌ Error fetching Fleet ID: %s, Response: %s", fleet_response.status_code, fleet_response.text)
+            print(f"❌ Error fetching Fleet ID: {fleet_response.status_code}, Response: {fleet_response.text}")
             messages.error(request, "Could not retrieve active fleet. Ensure you are in a fleet and have ESI permissions.")
             return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
 
@@ -264,22 +264,22 @@ def update_fleet_motd(request):
         <font size="13" color="#bfffffff">Logi Channel:</font>
         <font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font>
         """
-        logger.info("✅ MOTD Constructed Successfully.")
+        print(f"✅ MOTD Constructed Successfully.")
 
         # **Step 3: Send MOTD Update Request**
         esi_update_motd_url = ESI_UPDATE_MOTD_URL.format(fleet_id=fleet_id)
         motd_payload = {"motd": motd}
 
-        logger.info("🔍 Sending MOTD Update to ESI: %s", esi_update_motd_url)
-        logger.debug("MOTD Payload: %s", json.dumps(motd_payload, indent=4))
+        print(f"🔍 Sending MOTD Update to ESI: {esi_update_motd_url}")
+        print(f"MOTD Payload: {json.dumps(motd_payload, indent=4)}")
 
         response = requests.put(esi_update_motd_url, headers=headers, json=motd_payload)
 
         if response.status_code == 204:
-            logger.info("✅ MOTD updated successfully in-game!")
+            print(f"✅ MOTD updated successfully in-game!")
             messages.success(request, "Fleet MOTD updated successfully in-game!")
         else:
-            logger.error("❌ MOTD update failed: %s, Response: %s", response.status_code, response.text)
+            print(f"❌ MOTD update failed: {response.status_code}, Response: {response.text}")
             messages.error(request, f"Failed to update fleet MOTD. ESI Response: {response.status_code}")
 
     return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines, "motd": motd})
