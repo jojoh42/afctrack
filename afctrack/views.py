@@ -196,9 +196,6 @@ def index(request):
     # Get the fleet counts and payments based on the selected month, year, and budget
     player_payments = get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
 
-    # Fetch all doctrines from the database
-    doctrines = FittingsDoctrine.objects.all()
-
     # Pass data to the template
     context = {
         'month_name': calendar.month_name[selected_month],
@@ -273,3 +270,30 @@ def fleet_type_amount(request):
     }
 
     return render(request, "afctrack/fleet_type_amount.html", context)
+
+def start_fleet(request):
+    """
+    View to handle fleet creation. Fetches doctrines and handles form submission.
+    """
+    doctrines = FittingsDoctrine.objects.all()  # Fetch doctrines from DB
+
+    if request.method == "POST":
+        # Get form data
+        fleet_boss = request.POST.get("fleet_boss")
+        fleet_name = request.POST.get("fleet_name")
+        doctrine = request.POST.get("doctrine")
+        fleet_type = request.POST.get("fleet_type")
+        comms = request.POST.get("comms")
+
+        # Validate required fields
+        if not (fleet_boss and fleet_name and doctrine and fleet_type):
+            messages.error(request, "All fields are required.")
+            return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
+
+        # Process fleet creation logic (this part needs to be defined)
+        # Example: Save to a model or trigger an action
+        messages.success(request, f"Fleet '{fleet_name}' has been started successfully.")
+
+        return redirect("afctrack:index")  # Redirect to home after submission
+
+    return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
