@@ -195,10 +195,10 @@ def get_fleet_type_amount(selected_month, selected_year):
     return fleet_data
 
 def start_fleet(request):
-    """Ermöglicht das Erstellen einer neuen Flotte über das Formular in `start_fleet.html`."""
+    """Handles the fleet creation form and updates the MOTD after submission."""
     
-    doctrines = Doctrine.objects.all()  # Alle verfügbaren Doctrines abrufen
-    fleet_types = ["Peacetime", "StratOP", "Mining", "Hive"]  # Fleet-Typen
+    doctrines = Doctrine.objects.all()
+    fleet_types = ["Peacetime", "StratOP", "Mining", "Hive"]
     comms_options = [
         {"name": "OP1", "url": "https://shorturl.at/Kg2ka"},
         {"name": "OP2", "url": "https://shorturl.at/Kg2ka"},
@@ -215,7 +215,7 @@ def start_fleet(request):
         comms = request.POST.get("comms")
 
         if not all([fleet_boss, fleet_name, doctrine_name, fleet_type, comms]):
-            messages.error(request, "❌ Alle Felder müssen ausgefüllt werden!")
+            messages.error(request, "❌ All fields must be filled!")
             return render(request, "afctrack/start_fleet.html", {
                 "doctrines": doctrines,
                 "fleet_types": fleet_types,
@@ -225,27 +225,30 @@ def start_fleet(request):
         try:
             doctrine = Doctrine.objects.get(name=doctrine_name)
         except Doctrine.DoesNotExist:
-            messages.error(request, "❌ Die ausgewählte Doktrin existiert nicht!")
+            messages.error(request, "❌ The selected doctrine does not exist!")
             return redirect("afctrack:start_fleet")
 
-        # 1️⃣ **Neue Flotte in der Datenbank speichern (optional, falls benötigt)**
+        # 🛠️ FIX: Ensure a valid fleet object is assigned
+        fleet = Fleet.objects.create(name=fleet_name, fleet_boss=fleet_boss)
+
+        # **Store fleet data in FatLink**
         fatlink = FatLink.objects.create(
             creator=request.user,
             doctrine=doctrine_name,
             fleet_type=fleet_type,
-            esi_fleet_id=None,  # Falls die Flotten-ID noch nicht existiert, bleibt sie None
-            is_registered_on_esi=True  # Setzt die Flotte als aktiv
+            esi_fleet_id=None,  # This might need a real ID later
+            fleet=fleet,  # ✅ This fixes the error
+            is_registered_on_esi=True
         )
 
-        # 2️⃣ **Rufe die `update_fleet_motd`-Funktion auf, um die MOTD mit den neuen Daten zu setzen**
-        return update_fleet_motd(request, fleet_boss, doctrine_name, fleet_type, comms)
+        # Call `update_fleet_motd`
+        return redirect("afctrack:update_fleet_motd")
 
     return render(request, "afctrack/start_fleet.html", {
         "doctrines": doctrines,
         "fleet_types": fleet_types,
         "comms_options": comms_options,
     })
-
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(request, token, fleet_boss, doctrine_name, fleet_type, comms):
