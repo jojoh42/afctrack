@@ -247,7 +247,11 @@ def start_fleet(request):
     })
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
-def update_fleet_motd(request, token, fleet_boss, doctrine_name, fleet_type, comms):
+def update_fleet_motd(request, token):
+    fleet_boss = request.GET.get('fleet_boss')
+    doctrine_name = request.GET.get('doctrine_name')
+    fleet_type = request.GET.get('fleet_type')
+    comms = request.GET.get('comms')
     """ Holt die aktuelle Flotten-ID aus FatLink und aktualisiert die MOTD. """
     
     fatlink = FatLink.objects.filter(is_registered_on_esi=True).order_by('-created').first()
