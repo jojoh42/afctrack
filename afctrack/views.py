@@ -199,6 +199,8 @@ def update_fleet_motd(request):
     access_token = getattr(request.user.profile, "esi_access_token", None)
     character_id = getattr(request.user.profile, "eve_character_id", None)
 
+    print("Test Message")
+
     if not access_token or not character_id:
         print(f"❌ No ESI Access Token or Character ID found for user: {request.user}")
         messages.error(request, "No valid ESI token found. Please reauthenticate.")
@@ -381,29 +383,29 @@ def fleet_type_amount(request):
 
     return render(request, "afctrack/fleet_type_amount.html", context)
 
-def start_fleet(request):
-    """
-    View to handle fleet creation. Fetches doctrines and handles form submission.
-    """
-    doctrines = FittingsDoctrine.objects.all()  # Fetch doctrines from DB
+# def start_fleet(request):
+#     """
+#     View to handle fleet creation. Fetches doctrines and handles form submission.
+#     """
+#     doctrines = FittingsDoctrine.objects.all()  # Fetch doctrines from DB
 
-    if request.method == "POST":
-        # Get form data
-        fleet_boss = request.POST.get("fleet_boss")
-        fleet_name = request.POST.get("fleet_name")
-        doctrine = request.POST.get("doctrine")
-        fleet_type = request.POST.get("fleet_type")
-        comms = request.POST.get("comms")
+#     if request.method == "POST":
+#         # Get form data
+#         fleet_boss = request.POST.get("fleet_boss")
+#         fleet_name = request.POST.get("fleet_name")
+#         doctrine = request.POST.get("doctrine")
+#         fleet_type = request.POST.get("fleet_type")
+#         comms = request.POST.get("comms")
 
-        # Validate required fields
-        if not (fleet_boss and fleet_name and doctrine and fleet_type):
-            messages.error(request, "All fields are required.")
-            return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
+#         # Validate required fields
+#         if not (fleet_boss and fleet_name and doctrine and fleet_type):
+#             messages.error(request, "All fields are required.")
+#             return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
 
-        # Process fleet creation logic (this part needs to be defined)
-        # Example: Save to a model or trigger an action
-        messages.success(request, f"Fleet '{fleet_name}' has been started successfully.")
+#         # Process fleet creation logic (this part needs to be defined)
+#         # Example: Save to a model or trigger an action
+#         messages.success(request, f"Fleet '{fleet_name}' has been started successfully.")
 
-        return redirect("afctrack:index")  # Redirect to home after submission
+#         return redirect("afctrack:index")  # Redirect to home after submission
 
-    return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
+#     return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
