@@ -9,6 +9,10 @@ from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS
 from .models import FittingsDoctrine
 
+ESI_FLEET_URL = "https://esi.evetech.net/latest/fleets/{fleet_id}/"
+ESI_UPDATE_MOTD_URL = "https://esi.evetech.net/latest/fleets/{fleet_id}/motd/"
+ESI_TOKEN_URL = "https://login.eveonline.com/oauth/token"
+
 @login_required
 @permission_required("afctrack.basic_access")
 def get_fleet_counts_and_payment(request, budget, selected_month, selected_year):
@@ -174,6 +178,85 @@ def get_fleet_type_amount(selected_month, selected_year):
         })
 
     return fleet_data
+
+def update_fleet_motd(request):
+    """
+    Fetches the active Fleet ID and updates the MOTD via ESI.
+    """
+    doctrines = FittingsDoctrine.objects.all()  # Fetch all doctrines from DB
+    fleet_id = None
+    motd = ""
+
+    # Fetch the user's ESI access token (must be stored via Alliance Auth or another auth system)
+    access_token = request.user.profile.esi_access_token  # Adjust based on your auth system
+    character_id = request.user.profile.eve_character_id  # Fetch the EVE Character ID
+
+    if request.method == "POST":
+        # Get form data
+        fleet_boss = request.POST.get("fleet_boss")
+        fleet_name = request.POST.get("fleet_name")
+        doctrine_id = request.POST.get("doctrine")
+        fleet_type = request.POST.get("fleet_type")
+        comms = request.POST.get("comms")
+
+        # Validate input fields
+        if not (fleet_boss and fleet_name and doctrine_id and fleet_type and comms):
+            messages.error(request, "All fields are required.")
+            return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
+
+        # Retrieve the doctrine from the database
+        try:
+            doctrine = FittingsDoctrine.objects.get(id=doctrine_id)
+        except FittingsDoctrine.DoesNotExist:
+            messages.error(request, "Selected doctrine does not exist.")
+            return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
+
+        # Generate the doctrine link
+        doctrine_link = f"http://127.0.0.1:8000/fittings/doctrine/{doctrine.id}"
+
+        # Fetch the active Fleet ID from ESI
+        headers = {"Authorization": f"Bearer {access_token}"}
+        response = requests.get(ESI_CHARACTER_FLEET_URL.format(character_id=character_id), headers=headers)
+
+        if response.status_code == 200:
+            fleet_id = response.json().get("fleet_id")
+        else:
+            messages.error(request, "Could not retrieve active fleet. Ensure you are in a fleet and have ESI permissions.")
+            return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
+
+        # **Updated Fleet MOTD with Comms**
+        motd = f"""
+        <font size="14" color="#bfffffff"><br></font>
+        <font size="14" color="#ffff0000">Staging:</font>   
+        <font size="14" color="#ffd98d00"><loc><a href="showinfo:35834//1034323745897">P-ZMZV</a></loc></font><br><br>
+
+        <font size="14" color="#bfffffff">FC:</font> 
+        <font size="14" color="#ffd98d00"><loc><a href="showinfo:1375//2117211128">{fleet_boss}</a></loc></font><br><br>
+
+        <font size="14" color="#ff00ff00">Doctrine Link:</font><br>
+        <font size="14" color="#bfffffff"><a href="{doctrine_link}">{doctrine.name}</a></font><br><br>
+
+        <font size="14" color="#ff00ff00">Comms:</font><br>
+        <font size="14" color="#ff6868e1"><a href="{comms}">{comms}</a></font><br><br>
+
+        <font size="13" color="#bfffffff">Boost Channel:</font>
+        <font size="13" color="#ff6868e1"><a href="joinChannel:player_2ec80ee18cbb11eebe4600109bd0f828">IGC Boost</a></font><br><br>
+
+        <font size="13" color="#bfffffff">Logi Channel:</font>
+        <font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font>
+        """
+
+        # **Send MOTD Update Request to ESI**
+        esi_update_motd_url = ESI_UPDATE_MOTD_URL.format(fleet_id=fleet_id)
+        response = requests.put(esi_update_motd_url, headers=headers, json={"motd": motd})
+
+        if response.status_code == 204:
+            messages.success(request, "Fleet MOTD updated successfully in-game!")
+        else:
+            messages.error(request, f"Failed to update fleet MOTD. ESI Response: {response.status_code}")
+
+    return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines, "motd": motd})
+
 
 def index(request):
     # Get the current month and year
