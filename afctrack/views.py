@@ -211,12 +211,11 @@ def update_fleet_motd(token):
     
     # 2️⃣ **Doctrine-Link aus Doctrine-Tabelle abrufen**
     doctrine_link = "N/A"
-    if doctrine_name:
-        try:
-            doctrine_obj = Doctrine.objects.get(name=doctrine_name)
-            doctrine_link = f"http://127.0.0.1:8000/fittings/doctrine/{doctrine_obj.id}"
-        except Doctrine.DoesNotExist:
-            logger.warning(f"⚠️ Doktrin '{doctrine_name}' existiert nicht. Standard-Link wird verwendet.")
+    try:
+        doctrine_obj = Doctrine.objects.get(name=doctrine_name)
+        doctrine_link = f"http://127.0.0.1:8000/fittings/doctrine/{doctrine_obj.id}"
+    except Doctrine.DoesNotExist:
+        logger.warning(f"⚠️ Doktrin '{doctrine_name}' existiert nicht. Standard-Link wird verwendet.")
 
     # 3️⃣ **ESI Client erstellen**
     esi = esi_client_factory(token=token)
