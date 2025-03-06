@@ -12,7 +12,7 @@ from django.shortcuts import redirect
 from django.db import connection
 from django.http import JsonResponse
 from django.urls import path
-from afat.models import FatLink, Doctrine, Fat  # Fleet gibt es nicht, daher nutzen wir FatLink
+from afat.models import FatLink, Doctrine, Fat, Fleet  # Fleet gibt es nicht, daher nutzen wir FatLink
 from esi.clients import esi_client_factory
 from esi.decorators import token_required
 from fittings.models import Doctrine
