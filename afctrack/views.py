@@ -11,12 +11,18 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from django.db import connection
 from django.http import JsonResponse
+from django.urls import path
+from allianceauth.eveonline.auth.views import eve_sso_login
 from afat.models import FatLink, Fat
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS
 from .models import FittingsDoctrine
 
 logger = logging.getLogger(__name__)  # ✅ Logging setup
+
+urlpatterns = [
+    path('eve-sso-login/', eve_sso_login, name="eve_sso_login"),
+]
 
 # ESI API URLs
 ESI_FLEET_URL = "https://esi.evetech.net/latest/fleets/{fleet_id}/"
@@ -216,7 +222,7 @@ def update_fleet_motd(request):
     if not token_data:
         logger.error(f"❌ Kein gültiger ESI Token gefunden für User {request.user.username}")
         messages.error(request, "Bitte logge dich erneut über EVE SSO ein.")
-        return redirect("eve_sso_login")  # Umleitung zur SSO-Login-Seite
+        return redirect("/eve-sso-login/") 
 
     access_token = token_data['access_token']
     character_id = token_data['character_id']
