@@ -232,7 +232,7 @@ def refresh_and_get_token(user_id):
     if not token_data:
         return None
 
-    refreshed_token = refresh_token(token_data["refresh_token"])
+    refreshed_token = refresh_esi_token(token_data["refresh_token"])
     if refreshed_token:
         return {
             "access_token": refreshed_token,
@@ -312,7 +312,7 @@ def update_fleet_motd(request):
 
     return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines, "motd": motd})
 
-    
+
 def index(request):
     # Get the current month and year
     current_month = datetime.now().month
