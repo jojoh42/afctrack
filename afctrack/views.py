@@ -195,20 +195,20 @@ def get_fleet_type_amount(selected_month, selected_year):
     return fleet_data
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
-def update_fleet_motd(token):
+def update_fleet_motd(request, token):
     """ Holt die aktuelle Flotten-ID aus FatLink, prüft die Doktrin und aktualisiert die MOTD. """
     
-    # 1️⃣ **Aktuelle Flotte holen** (Wir nehmen die letzte erstellte, falls es mehrere gibt)
+    # 1️⃣ **Aktuelle Flotte holen**
     fatlink = FatLink.objects.filter(is_registered_on_esi=True).order_by('-created').first()
     if not fatlink:
         logger.warning("❌ Keine aktive Flotte (FatLink) gefunden.")
         return
 
     fleet_id = fatlink.esi_fleet_id
-    fleet_boss = fatlink.character.character_name  # Fleet Commander Name
-    doctrine_name = fatlink.doctrine  # Doctrine ist als String gespeichert
-    comms = "https://shorturl.at/Kg2ka"  # Standard Comms, falls nicht explizit gesetzt
-    
+    fleet_boss = fatlink.owner.character_name  # Falls `owner` das richtige Feld ist
+    doctrine_name = fatlink.doctrine or "Unbekannt"
+    comms = "https://shorturl.at/Kg2ka"  # Standard Comms
+
     # 2️⃣ **Doctrine-Link aus Doctrine-Tabelle abrufen**
     doctrine_link = "N/A"
     try:
@@ -220,7 +220,7 @@ def update_fleet_motd(token):
     # 3️⃣ **ESI Client erstellen**
     esi = esi_client_factory(token=token)
 
-    # 4️⃣ **Neue MOTD im gewünschten Format setzen**
+    # 4️⃣ **Neue MOTD setzen**
     motd = f"""
     <font size="14" color="#ffff0000">Staging:</font>   
     <font size="14" color="#ffd98d00"><loc><a href="showinfo:35834//1034323745897">P-ZMZV</a></loc></font><br>
@@ -242,7 +242,7 @@ def update_fleet_motd(token):
 
     # 5️⃣ **MOTD über ESI setzen**
     try:
-        esi.Fleets.put_fleets_fleet_id(fleet_id=fleet_id, token=token, motd=motd)
+        esi.Fleets.put_fleets_fleet_id_motd(fleet_id=fleet_id, token=token, motd={"motd": motd})
         logger.info(f"✅ Flotten-MOTD erfolgreich geändert: {motd}")
     except Exception as e:
         logger.exception(f"❌ Fehler beim Setzen der neuen MOTD: {e}")
