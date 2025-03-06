@@ -12,7 +12,7 @@ from django.shortcuts import redirect
 from django.db import connection
 from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import path, reverse
-from afat.models import FatLink, Doctrine, Fat # Fleet gibt es nicht, daher nutzen wir FatLink
+from afat.models import FatLink, Doctrine, Fat  # Fleet gibt es nicht, daher nutzen wir FatLink
 from esi.clients import esi_client_factory
 from esi.decorators import token_required
 from fittings.models import Doctrine
@@ -39,9 +39,6 @@ def get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
     current_month = selected_month
     current_year = selected_year
 
-    # Get the primary keys of users in the "jfc" or "fc" groups
-    #fc_users_ids = User.objects.filter(groups__name__in=["junior fc", "fc"]).values_list('id', flat=True)
-
     fc_users_ids = User.objects.filter(groups__name__in=AFCTRACK_FC_GROUPS).values_list('id', flat=True)
     
     # Filter FatLink by those users and the selected month/year
@@ -52,7 +49,6 @@ def get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
     ).values('creator_id__username', 'id', 'fleet_type')\
      .annotate(fleet_count=Count('id')).order_by('creator_id__username', 'fleet_type')
 
-    # Aggregate fleet counts, doctrine points, and participants
     player_data = {}
     total_fleet_points = 0
 
@@ -62,10 +58,7 @@ def get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
         fleet_type = fleet['fleet_type']
         fleet_count = fleet['fleet_count']
 
-        # Count participants for this fleet from the afat_fat table
         participant_count = Fat.objects.filter(fatlink_id=fleet_id).count()
-
-        # Get points for the doctrine
         fleet_points = POINTS.get(fleet_type, 0)
 
         if player_name not in player_data:
@@ -75,13 +68,11 @@ def get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
                 'total_participants': 0,
             }
 
-        # Accumulate fleet counts, points, and participants for the player
         player_data[player_name]['total_fleet_count'] += fleet_count
         player_data[player_name]['total_fleet_points'] += fleet_points * fleet_count
         player_data[player_name]['total_participants'] += participant_count
         total_fleet_points += fleet_points * fleet_count
 
-    # Calculate ISK per point if the total score is greater than 0
     if total_fleet_points > 0:
         isk_per_point = budget / total_fleet_points
         round_isk_per_point = round(isk_per_point)
@@ -89,12 +80,9 @@ def get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
         isk_per_point = 0
         round_isk_per_point = round(isk_per_point)
 
-    # Calculate the payment for each player
     player_payments = []
     for player_name, data in player_data.items():
-        # Calculate the payment based on the doctrine points
         payment = data['total_fleet_points'] * round_isk_per_point
-        # Calculate the average participants per fleet
         avg_participants = data['total_participants'] / data['total_fleet_count'] if data['total_fleet_count'] > 0 else 0
         player_payments.append({
             'player_name': player_name,
@@ -107,14 +95,8 @@ def get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
 
 
 def get_doctrine_counts(selected_month, selected_year):
-    """
-    Get doctrine counts and average participants for the selected month/year.
-    """
-    # Get the primary keys of users in the "jfc" or "fc" groups
-    #fc_users_ids = User.objects.filter(groups__name__in=["junior fc", "fc"]).values_list('id', flat=True)
     fc_users_ids = User.objects.filter(groups__name__in=AFCTRACK_FC_GROUPS).values_list('id', flat=True)
 
-    # Filter FatLink by those users and the selected month/year
     doctrine_counts = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
         created__month=selected_month,
@@ -123,13 +105,11 @@ def get_doctrine_counts(selected_month, selected_year):
         doctrine_count=Count('id')
     ).order_by('-doctrine_count')
 
-    # Calculate average participants per doctrine
     doctrine_data = []
     for doctrine in doctrine_counts:
         doctrine_name = doctrine['doctrine']
         doctrine_count = doctrine['doctrine_count']
 
-        # Count total participants for all fleets under this doctrine
         total_participants = Fat.objects.filter(
             fatlink_id__in=FatLink.objects.filter(
                 creator_id__in=fc_users_ids,
@@ -139,26 +119,19 @@ def get_doctrine_counts(selected_month, selected_year):
             ).values_list('id', flat=True)
         ).count()
 
-        # Calculate average participants per fleet
         avg_participants = total_participants / doctrine_count if doctrine_count > 0 else 0
 
         doctrine_data.append({
             'doctrine': doctrine_name,
             'doctrine_count': doctrine_count,
-            'avg_participants': round(avg_participants, 1),  # Round to 1 decimal
+            'avg_participants': round(avg_participants, 1),
         })
 
     return doctrine_data
 
 def get_fleet_type_amount(selected_month, selected_year):
-    """
-    Get fleet type counts and average participants for the selected month/year.
-    """
-    # Get the primary keys of users in the "jfc" or "fc" groups
-    #fc_users_ids = User.objects.filter(groups__name__in=["junior fc", "fc", "Mining Officer"]).values_list('id', flat=True)
     fc_users_ids = User.objects.filter(groups__name__in=AFCTRACK_FLEET_TYPE_GROUPS).values_list('id', flat=True)
 
-    # Filter FatLink by fleet_type and selected month/year
     fleet_count_type = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
         created__month=selected_month,
@@ -167,13 +140,11 @@ def get_fleet_type_amount(selected_month, selected_year):
      .annotate(type_count=Count('id'))\
      .order_by('-type_count')
 
-    # Calculate average participants per fleet type
     fleet_data = []
     for fleet in fleet_count_type:
         fleet_type = fleet['fleet_type']
         fleet_count = fleet['type_count']
 
-        # Count total participants for all fleets of this fleet_type
         total_participants = Fat.objects.filter(
             fatlink_id__in=FatLink.objects.filter(
                 creator_id__in=fc_users_ids,
@@ -183,13 +154,12 @@ def get_fleet_type_amount(selected_month, selected_year):
             ).values_list('id', flat=True)
         ).count()
 
-        # Calculate average participants per fleet type
         avg_participants = total_participants / fleet_count if fleet_count > 0 else 0
 
         fleet_data.append({
             'fleet_type': fleet_type,
             'fleet_count': fleet_count,
-            'avg_participants': round(avg_participants, 1),  # Round to 1 decimal
+            'avg_participants': round(avg_participants, 1),
         })
 
     return fleet_data
@@ -223,13 +193,17 @@ def start_fleet(request):
                 "comms_options": comms_options,
             })
 
-        # Umkehrung der URL mit den Parametern im URL-Pfad
+        # URL-encode the comms URL to avoid issues with special characters
+        from urllib.parse import quote
+        comms_encoded = quote(comms)
+
+        # Redirect to the MOTD update view
         return HttpResponseRedirect(
             reverse('afctrack:update_fleet_motd', kwargs={
                 'fleet_boss': fleet_boss,
                 'doctrine_name': doctrine_name,
                 'fleet_type': fleet_type,
-                'comms': comms
+                'comms': comms_encoded
             })
         )
 
@@ -242,6 +216,10 @@ def start_fleet(request):
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(request, token, fleet_boss, doctrine_name, fleet_type, comms):
     """ Updates the MOTD for the fleet """
+    from urllib.parse import unquote
+
+    comms_decoded = unquote(comms)  # Decode the comms URL if necessary
+
     fatlink = FatLink.objects.filter(is_registered_on_esi=True).order_by('-created').first()
     if not fatlink:
         logger.warning("❌ Keine aktive Flotte (FatLink) gefunden.")
@@ -249,7 +227,6 @@ def update_fleet_motd(request, token, fleet_boss, doctrine_name, fleet_type, com
 
     fleet_id = fatlink.esi_fleet_id
 
-    # Doctrine-Link abrufen
     doctrine_link = "N/A"
     try:
         doctrine_obj = Doctrine.objects.get(name=doctrine_name)
@@ -257,7 +234,6 @@ def update_fleet_motd(request, token, fleet_boss, doctrine_name, fleet_type, com
     except Doctrine.DoesNotExist:
         logger.warning(f"⚠️ Doktrin '{doctrine_name}' existiert nicht. Standard-Link wird verwendet.")
 
-    # MOTD erstellen
     motd = f"""´<br>
     <font size="14" color="#ffff0000">Staging:</font>   
     <font size="14" color="#ffd98d00"><loc><a href="showinfo:35834//1034323745897">P-ZMZV</a></loc></font><br>
@@ -265,14 +241,13 @@ def update_fleet_motd(request, token, fleet_boss, doctrine_name, fleet_type, com
     <font size="14" color="#bfffffff">FC:</font> <font size="14" color="#ffd98d00">{fleet_boss}</font><br>
 
     <font size="14" color="#ff00ff00">Doctrine Link:</font> <font size="14" color="#bfffffff"><a href="{doctrine_link}">{doctrine_name}</a></font><br>
-    <font size="14" color="#ff00ff00">Comms:</font> <font size="14" color="#ff6868e1"><a href="{comms}">{comms}</a></font><br>
+    <font size="14" color="#ff00ff00">Comms:</font> <font size="14" color="#ff6868e1"><a href="{comms_decoded}">{comms_decoded}</a></font><br>
 
     <font size="13" color="#bfffffff">Boost Channel:</font> <font size="13" color="#ff6868e1"><a href="joinChannel:player_2ec80ee18cbb11eebe4600109bd0f828">IGC Boost</a></font><br>
 
     <font size="13" color="#bfffffff">Logi Channel:</font> <font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font>
     """
 
-    # Set the MOTD via ESI
     try:
         response = esi_client_factory(token=token).Fleets.put_fleets_fleet_id(
             fleet_id=fleet_id, token=token.access_token, new_settings={"motd": motd}
@@ -285,97 +260,75 @@ def update_fleet_motd(request, token, fleet_boss, doctrine_name, fleet_type, com
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
 def index(request):
-    # Get the current month and year
     current_month = datetime.now().month
     current_year = datetime.now().year
 
-    # Get the selected month and year from GET parameters, default to current if not provided
     selected_month = int(request.GET.get('month', current_month))
     selected_year = int(request.GET.get('year', current_year))
 
-    # Create a list of months (1 to 12)
-    available_months = list(range(1, 13))  # months from 1 to 12
-
-    # Create a list of years (current year and previous 5 years, for example)
+    available_months = list(range(1, 13))  
     available_years = list(range(current_year - 5, current_year + 1))
 
-    # Get the budget from GET parameters (default to 3 billion ISK)
     budget = int(request.GET.get('budget', 3000000000))
 
-    # Get the fleet counts and payments based on the selected month, year, and budget
     player_payments = get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
 
-    # Pass data to the template
     context = {
         'month_name': calendar.month_name[selected_month],
-        'available_months': available_months,  # List of months
-        'available_years': available_years,    # List of years
+        'available_months': available_months,
+        'available_years': available_years,
         'player_payments': player_payments,
         'budget': budget,
-        'selected_month': selected_month,  # Ensure selected month is highlighted
-        'selected_year': selected_year,    # Ensure selected year is highlighted
+        'selected_month': selected_month,
+        'selected_year': selected_year,
     }
 
     return render(request, 'afctrack/index.html', context)
 
 
 def doctrine_amount(request):
-    # Get the current month and year
     current_month = datetime.now().month
     current_year = datetime.now().year
 
-    # Get the selected month and year from GET parameters, default to current if not provided
     selected_month = int(request.GET.get('month', current_month))
     selected_year = int(request.GET.get('year', current_year))
 
-    # Create a list of months (1 to 12)
-    available_months = list(range(1, 13))  # months from 1 to 12
-
-    # Create a list of years (current year and previous 5 years, for example)
+    available_months = list(range(1, 13))  
     available_years = list(range(current_year - 5, current_year + 1))
 
-    # Get the doctrine counts and average participants
     doctrine_counts = get_doctrine_counts(selected_month, selected_year)
 
-    # Pass data to the template
     context = {
         'month_name': calendar.month_name[selected_month],
-        'available_months': available_months,  # List of months
-        'available_years': available_years,    # List of years
+        'available_months': available_months,
+        'available_years': available_years,
         'doctrine_counts': doctrine_counts,
-        'selected_month': selected_month,  # Ensure selected month is highlighted
-        'selected_year': selected_year,    # Ensure selected year is highlighted
+        'selected_month': selected_month,
+        'selected_year': selected_year,
     }
 
     return render(request, "afctrack/doctrine_amount.html", context)
 
 
 def fleet_type_amount(request):
-    # Get the current month and year
     current_month = datetime.now().month
     current_year = datetime.now().year
 
-    # Get the selected month and year from GET parameters, default to current if not provided
     selected_month = int(request.GET.get('month', current_month))
     selected_year = int(request.GET.get('year', current_year))
 
-    # Create a list of months (1 to 12)
-    available_months = list(range(1, 13))  # months from 1 to 12
-
-    # Create a list of years (current year and previous 5 years, for example)
+    available_months = list(range(1, 13))  
     available_years = list(range(current_year - 5, current_year + 1))
 
-    # Get the fleet type counts and average participants
     fleet_data = get_fleet_type_amount(selected_month, selected_year)
 
-    # Pass data to the template, change fleet_data to fleet_type_counts
     context = {
         'month_name': calendar.month_name[selected_month],
-        'available_months': available_months,  # List of months
-        'available_years': available_years,    # List of years
-        'fleet_type_counts': fleet_data,  # Change fleet_data to fleet_type_counts
-        'selected_month': selected_month,  # Ensure selected month is highlighted
-        'selected_year': selected_year,    # Ensure selected year is highlighted
+        'available_months': available_months,
+        'available_years': available_years,
+        'fleet_type_counts': fleet_data,
+        'selected_month': selected_month,
+        'selected_year': selected_year,
     }
 
     return render(request, "afctrack/fleet_type_amount.html", context)
