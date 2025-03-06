@@ -13,6 +13,10 @@ from django.db import connection
 from django.http import JsonResponse
 from django.urls import path
 from afat.models import FatLink, Fat
+from afat.models import Fleet
+from esi.clients import esi_client_factory
+from esi.decorators import token_required
+from fittings.models import FittingsDoctrine
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS
 from .models import FittingsDoctrine
@@ -191,99 +195,74 @@ def get_fleet_type_amount(selected_month, selected_year):
 
     return fleet_data
 
-def get_latest_esi_token(user_id):
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT access_token, character_id, refresh_token
-            FROM esi_token
-            WHERE user_id = %s
-            ORDER BY created DESC
-            LIMIT 1;
-        """, [user_id])
+@token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
+def update_fleet_motd(token):
+    """ Holt die aktuelle Flotten-ID, prüft die Doktrin und aktualisiert die MOTD. """
+    
+    # 1. Aktuelle Flotte holen
+    fleet = Fleet.objects.filter(is_active=True).order_by('-created_at').first()
+    if not fleet:
+        logger.warning("Keine aktive Flotte gefunden.")
+        return
 
-        row = cursor.fetchone()
+    fleet_id = fleet.fleet_id
+    fleet_boss = fleet.owner.character_name
+    commander_id = fleet.owner.character_id  # FC zKillboard Link ID
+    
+    # 2. ESI Client erstellen
+    esi = esi_client_factory(token=token)
+    
+    # 3. Flottendaten abrufen
+    try:
+        response = esi.Fleets.get_fleets_fleet_id(fleet_id=fleet_id).result()
+        if not response:
+            logger.error("Konnte keine Flotteninformationen abrufen.")
+            return
+    except Exception as e:
+        logger.exception(f"Fehler beim Abrufen der Flottendaten: {e}")
+        return
 
-    return {
-        "access_token": row[0],
-        "character_id": row[1],
-        "refresh_token": row[2],
-    } if row else None
+    # 4. Doktrin abrufen
+    doctrine_name = fleet.doctrine  # Falls die Doctrine als einfacher String gespeichert wird
+    doctrine_link = "N/A"
 
-def update_fleet_motd(request):
-    doctrines = FittingsDoctrine.objects.all()
-    motd = ""
-
-    token_data = get_latest_esi_token(request.user.id)
-
-    if not token_data:
-        logger.error(f"❌ Kein gültiger ESI Token gefunden für User {request.user.username}")
-        messages.error(request, "Bitte logge dich erneut über EVE SSO ein.")
-        return redirect("/eve-sso-login/") 
-
-    access_token = token_data['access_token']
-    character_id = token_data['character_id']
-
-    if request.method == "POST":
-        fleet_boss = request.POST.get("fleet_boss")
-        fleet_name = request.POST.get("fleet_name")
-        doctrine_name = request.POST.get("doctrine")
-        fleet_type = request.POST.get("fleet_type")
-        comms = request.POST.get("comms")
-
-        if not all([fleet_boss, fleet_name, doctrine_name, fleet_type, comms]):
-            messages.error(request, "Alle Felder sind erforderlich.")
-            return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
-
+    if doctrine_name:
         try:
             doctrine = FittingsDoctrine.objects.get(name=doctrine_name)
             doctrine_link = f"http://127.0.0.1:8000/fittings/doctrine/{doctrine.id}"
         except FittingsDoctrine.DoesNotExist:
-            messages.error(request, "Gewählte Doctrine existiert nicht.")
-            return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
+            logger.warning(f"Doktrin '{doctrine_name}' existiert nicht. Standard-Link wird verwendet.")
 
-        headers = {"Authorization": f"Bearer {token_data['access_token']}"}
-        fleet_response = requests.get(f"https://esi.evetech.net/latest/characters/{token_data['character_id']}/fleet/", headers=headers)
+    # 5. Comms-Link holen (falls in der DB gespeichert)
+    comms = fleet.comms if hasattr(fleet, 'comms') else "https://shorturl.at/Kg2ka"
 
-        if fleet_response.status_code == 403:
-            messages.error(request, "Dein Token hat nicht die erforderlichen Berechtigungen. Bitte logge dich erneut ein.")
-            return redirect("/eve-sso-login/")  # Benutzer erneut zur SSO-Login-Seite schicken
-        elif fleet_response.status_code != 200:
-            messages.error(request, "Aktuelle Flotte konnte nicht abgerufen werden.")
-            logger.error(f"ESI Fehler: {fleet_response.status_code}, {fleet_response.text}")
-            return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
+    # 6. MOTD setzen
+    motd = f"""
+    <font size="14" color="#ffff0000">Staging:</font>   
+    <font size="14" color="#ffd98d00"><loc><a href="showinfo:35834//1034323745897">P-ZMZV</a></loc></font><br>
 
-        fleet_id = fleet_response.json().get("fleet_id")
+    <font size="14" color="#bfffffff">FC:</font> 
+    <font size="14" color="#ffd98d00">{fleet_boss}</font><br>
 
-        motd = f"""
-        <font size="14" color="#ffff0000">Staging:</font>   
-        <font size="14" color="#ffd98d00"><loc><a href="showinfo:35834//1034323745897">P-ZMZV</a></loc></font><br><br>
+    <font size="14" color="#ff00ff00">Doctrine Link:</font>
+    <font size="14" color="#bfffffff"><a href="{doctrine_link}">{doctrine_name}</a></font><br>
+    <font size="14" color="#ff00ff00">Comms:</font>
+    <font size="14" color="#ff6868e1"><a href="{comms}">{comms}</a></font><br>
 
-        <font size="14" color="#bfffffff">FC:</font> 
-        <font size="14" color="#ffd98d00">{fleet_boss}</font><br><br>
+    <font size="13" color="#bfffffff">Boost Channel:</font>
+    <font size="13" color="#ff6868e1"><a href="joinChannel:player_2ec80ee18cbb11eebe4600109bd0f828">IGC Boost</a></font><br>
 
-        <font size="14" color="#ff00ff00">Doctrine Link:</font><br>
-        <font size="14" color="#bfffffff"><a href="{doctrine_link}">{doctrine.name}</a></font><br><br>
+    <font size="13" color="#bfffffff">Logi Channel:</font>
+    <font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font>
+    """
 
-        <font size="14" color="#ff00ff00">Comms:</font><br>
-        <font size="14" color="#ff6868e1"><a href="{comms}">{comms}</a></font><br><br>
-
-        <font size="13" color="#bfffffff">Boost Channel:</font>
-        <font size="13" color="#ff6868e1"><a href="joinChannel:player_2ec80ee18cbb11eebe4600109bd0f828">IGC Boost</a></font><br><br>
-
-        <font size="13" color="#bfffffff">Logi Channel:</font>
-        <font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font>
-        """
-
-        response = requests.put(ESI_UPDATE_MOTD_URL.format(fleet_id=fleet_id), headers=headers, json={"motd": motd})
-
-        if response.status_code == 204:
-            messages.success(request, "Fleet MOTD erfolgreich aktualisiert.")
-        else:
-            messages.error(request, f"Fehler beim Aktualisieren der MOTD. Statuscode: {response.status_code}")
-
-    return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines, "motd": motd})
-
-
+    # 7. MOTD über ESI setzen
+    try:
+        esi.Fleets.put_fleets_fleet_id(fleet_id=fleet_id, token=token, motd=motd)
+        logger.info(f"Flotten-MOTD erfolgreich geändert: {motd}")
+    except Exception as e:
+        logger.exception(f"Fehler beim Setzen der neuen MOTD: {e}")
+        return
 
 def index(request):
     # Get the current month and year
