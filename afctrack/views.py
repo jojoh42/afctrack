@@ -4,14 +4,16 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render
 from django.contrib.auth.models import User
 from django.db.models import Count, Sum
+from django.contrib import messages
 from afat.models import FatLink, Fat
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS
 from .models import FittingsDoctrine
 
+# ESI API URLs
 ESI_FLEET_URL = "https://esi.evetech.net/latest/fleets/{fleet_id}/"
 ESI_UPDATE_MOTD_URL = "https://esi.evetech.net/latest/fleets/{fleet_id}/motd/"
-ESI_TOKEN_URL = "https://login.eveonline.com/oauth/token"
+ESI_CHARACTER_FLEET_URL = "https://esi.evetech.net/latest/characters/{character_id}/fleet/"
 
 @login_required
 @permission_required("afctrack.basic_access")
@@ -179,6 +181,8 @@ def get_fleet_type_amount(selected_month, selected_year):
 
     return fleet_data
 
+@login_required
+@permission_required("afctrack.basic_access")
 def update_fleet_motd(request):
     """
     Fetches the active Fleet ID and updates the MOTD via ESI.
@@ -187,9 +191,10 @@ def update_fleet_motd(request):
     fleet_id = None
     motd = ""
 
-    # Fetch the user's ESI access token (must be stored via Alliance Auth or another auth system)
-    access_token = request.user.profile.esi_access_token  # Adjust based on your auth system
-    character_id = request.user.profile.eve_character_id  # Fetch the EVE Character ID
+    # Get the user's ESI access token
+    character_id = request.user.profile.eve_character_id
+    token = get_object_or_404(Token, user=request.user, character_id=character_id)
+    access_token = token.access_token
 
     if request.method == "POST":
         # Get form data
@@ -201,7 +206,7 @@ def update_fleet_motd(request):
 
         # Validate input fields
         if not (fleet_boss and fleet_name and doctrine_id and fleet_type and comms):
-            messages.error(request, "All fields are required.")
+            messages.error(request, "All fields are required.")  # ✅ Uses messages correctly
             return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
 
         # Retrieve the doctrine from the database
@@ -251,7 +256,7 @@ def update_fleet_motd(request):
         response = requests.put(esi_update_motd_url, headers=headers, json={"motd": motd})
 
         if response.status_code == 204:
-            messages.success(request, "Fleet MOTD updated successfully in-game!")
+            messages.success(request, "Fleet MOTD updated successfully in-game!")  # ✅ Fixed messages.success()
         else:
             messages.error(request, f"Failed to update fleet MOTD. ESI Response: {response.status_code}")
 
