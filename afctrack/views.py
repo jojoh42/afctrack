@@ -13,7 +13,6 @@ from afat.models import FatLink, Fat
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS
 from .models import FittingsDoctrine
-from esi_token.models import EsiToken
 
 logger = logging.getLogger(__name__)  # ✅ Logging setup
 
@@ -192,15 +191,38 @@ def update_fleet_motd(request):
     doctrines = FittingsDoctrine.objects.all()
     motd = ""
 
-    try:
-        esi_token = EsiToken.objects.filter(user_id=request.user.id).latest('created')
-    except EsiToken.DoesNotExist:
-        logger.error(f"❌ Kein ESI Token gefunden für User {request.user.username}")
-        messages.error(request, "Bitte authentifiziere dich erneut mit deinem EVE Charakter.")
-        return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
+    def get_latest_esi_token(user_id):
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT access_token, character_id, refresh_token
+                FROM esi_token
+                WHERE user_id = %s
+                ORDER BY created DESC
+                LIMIT 1;
+            """, [request.user.id])
 
-    access_token = esi_token.access_token
-    character_id = esi_token.character_id
+            row = cursor.fetchone()
+
+        if row:
+            return {
+                "access_token": row[0],
+                "character_id": row[1],
+                "refresh_token": row[2],
+            }
+        else:
+            return None
+
+    token_data = get_latest_esi_token_for_user(request.user.id)
+
+    if not token_data:
+        logging.error(f"❌ Kein ESI Token gefunden für User {request.user.username}")
+        messages.error(request, "Bitte authentifiziere dich erneut mit deinem EVE Charakter.")
+        return render(request, "afctrack/start_fleet.html")
+
+    access_token = token_data['access_token']
+    character_id = token_data['character_id']
+
+    doctrines = FittingsDoctrine.objects.all()
 
     if request.method == "POST":
         fleet_boss = request.POST.get("fleet_boss")
@@ -211,30 +233,30 @@ def update_fleet_motd(request):
 
         if not all([fleet_boss, fleet_name, doctrine_id, fleet_type, comms]):
             messages.error(request, "Alle Felder sind erforderlich.")
-            return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
+            return render(request, "afctrack/start_fleet.html")
 
         try:
             doctrine = FittingsDoctrine.objects.get(id=doctrine_id)
             doctrine_link = f"http://127.0.0.1:8000/fittings/doctrine/{doctrine.id}"
         except FittingsDoctrine.DoesNotExist:
             messages.error(request, "Gewählte Doctrine existiert nicht.")
-            return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
+            return render(request, "afctrack/start_fleet.html")
 
         headers = {"Authorization": f"Bearer {access_token}"}
-        fleet_response = requests.get(f"https://esi.evetech.net/latest/characters/{character_id}/fleet/", headers=headers)
+        fleet_response = requests.get(ESI_CHARACTER_FLEET_URL.format(character_id=token_data['character_id']), headers=headers)
 
         if fleet_response.status_code == 200:
             fleet_id = fleet_response.json().get("fleet_id")
         else:
             messages.error(request, "Aktuelle Flotte konnte nicht abgerufen werden.")
-            return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
+            return render(request, "afctrack/start_fleet.html")
 
         motd = f"""
         <font size=\"14\" color=\"#ffff0000\">Staging:</font>   
         <font size=\"14\" color=\"#ffd98d00\"><loc><a href=\"showinfo:35834//1034323745897\">P-ZMZV</a></loc></font><br><br>
 
         <font size=\"14\" color=\"#bfffffff\">FC:</font> 
-        <font size=\"14\" color=\"#ffd98d00\"><loc><a href=\"showinfo:1375//2117211128\">{fleet_boss}</a></loc></font><br><br>
+        <font size=\"14\" color=\"#ffd98d00\">{fleet_boss}</font><br><br>
 
         <font size=\"14\" color=\"#ff00ff00\">Doctrine Link:</font><br>
         <font size=\"14\" color=\"#bfffffff\"><a href=\"{doctrine_link}\">{doctrine.name}</a></font><br><br>
@@ -250,7 +272,7 @@ def update_fleet_motd(request):
         """
 
         response = requests.put(
-            ESI_UPDATE_MOTD_URL.format(fleet_id=fleet_response.json().get("fleet_id")),
+            ESI_UPDATE_MOTD_URL.format(fleet_id=fleet_id),
             headers=headers,
             json={"motd": motd}
         )
@@ -260,7 +282,7 @@ def update_fleet_motd(request):
         else:
             messages.error(request, f"Fehler beim Aktualisieren der MOTD. Statuscode: {response.status_code}")
 
-    return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines, "motd": motd})
+    return render(request, "afctrack/start_fleet.html", {"motd": motd})
 
 
 
