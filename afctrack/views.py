@@ -187,42 +187,43 @@ def get_fleet_type_amount(selected_month, selected_year):
 
     return fleet_data
 
+def get_latest_esi_token(user_id):
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT access_token, character_id, refresh_token
+            FROM esi_token
+            WHERE user_id = %s
+            ORDER BY created DESC
+            LIMIT 1;
+        """, [user_id])
+
+        row = cursor.fetchone()
+
+    if row:
+        return {
+            "access_token": row[0],
+            "character_id": row[1],
+            "refresh_token": row[2],
+        }
+    else:
+        return None
+
+
+@login_required
+@permission_required("afctrack.basic_access")
 def update_fleet_motd(request):
     doctrines = FittingsDoctrine.objects.all()
     motd = ""
 
-    def get_latest_esi_token(user_id):
-        with connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT access_token, character_id, refresh_token
-                FROM esi_token
-                WHERE user_id = %s
-                ORDER BY created DESC
-                LIMIT 1;
-            """, [request.user.id])
-
-            row = cursor.fetchone()
-
-        if row:
-            return {
-                "access_token": row[0],
-                "character_id": row[1],
-                "refresh_token": row[2],
-            }
-        else:
-            return None
-
-    token_data = get_latest_esi_token_for_user(request.user.id)
+    token_data = get_latest_esi_token(request.user.id)
 
     if not token_data:
-        logging.error(f"❌ Kein ESI Token gefunden für User {request.user.username}")
+        logger.error(f"❌ Kein ESI Token gefunden für User {request.user.username}")
         messages.error(request, "Bitte authentifiziere dich erneut mit deinem EVE Charakter.")
-        return render(request, "afctrack/start_fleet.html")
+        return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
 
     access_token = token_data['access_token']
     character_id = token_data['character_id']
-
-    doctrines = FittingsDoctrine.objects.all()
 
     if request.method == "POST":
         fleet_boss = request.POST.get("fleet_boss")
@@ -233,23 +234,23 @@ def update_fleet_motd(request):
 
         if not all([fleet_boss, fleet_name, doctrine_id, fleet_type, comms]):
             messages.error(request, "Alle Felder sind erforderlich.")
-            return render(request, "afctrack/start_fleet.html")
+            return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
 
         try:
             doctrine = FittingsDoctrine.objects.get(id=doctrine_id)
             doctrine_link = f"http://127.0.0.1:8000/fittings/doctrine/{doctrine.id}"
         except FittingsDoctrine.DoesNotExist:
             messages.error(request, "Gewählte Doctrine existiert nicht.")
-            return render(request, "afctrack/start_fleet.html")
+            return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
 
         headers = {"Authorization": f"Bearer {access_token}"}
-        fleet_response = requests.get(ESI_CHARACTER_FLEET_URL.format(character_id=token_data['character_id']), headers=headers)
+        fleet_response = requests.get(ESI_CHARACTER_FLEET_URL.format(character_id=character_id), headers=headers)
 
         if fleet_response.status_code == 200:
             fleet_id = fleet_response.json().get("fleet_id")
         else:
             messages.error(request, "Aktuelle Flotte konnte nicht abgerufen werden.")
-            return render(request, "afctrack/start_fleet.html")
+            return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
 
         motd = f"""
         <font size=\"14\" color=\"#ffff0000\">Staging:</font>   
@@ -282,9 +283,7 @@ def update_fleet_motd(request):
         else:
             messages.error(request, f"Fehler beim Aktualisieren der MOTD. Statuscode: {response.status_code}")
 
-    return render(request, "afctrack/start_fleet.html", {"motd": motd})
-
-
+    return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines, "motd": motd})
 
 def index(request):
     # Get the current month and year
