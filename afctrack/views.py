@@ -249,7 +249,7 @@ def update_fleet_motd(request):
             fleet_id = fleet_response.json().get("fleet_id")
         else:
             messages.error(request, "Aktuelle Flotte konnte nicht abgerufen werden.")
-            return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
+            print(f"ESI Response: {fleet_response.status_code}, {fleet_response.text}")            return render(request, "afctrack/start_fleet.html", {"doctrines": doctrines})
 
         motd = f"""
         <font size=\"14\" color=\"#ffff0000\">Staging:</font>   
