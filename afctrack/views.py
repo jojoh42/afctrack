@@ -256,7 +256,8 @@ def update_fleet_motd(request, token):
 )
 
         logger.info(f"✅ Flotten-MOTD erfolgreich geändert: {motd}")
-        return JsonResponse({"status": "success", "message": "MOTD erfolgreich gesetzt", "esi_response": response}, status=200)
+        return JsonResponse({"status": "success", "message": "MOTD erfolgreich gesetzt", "esi_response": response.result()}, status=200)
+
     except Exception as e:
         logger.exception(f"❌ Fehler beim Setzen der neuen MOTD: {e}")
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
