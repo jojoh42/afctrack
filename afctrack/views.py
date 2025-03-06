@@ -207,13 +207,12 @@ def update_fleet_motd(request, token):
     fleet_id = fatlink.esi_fleet_id
 
     # 2️⃣ **Fleet Boss bestimmen (Fleet Commander)**
-    if hasattr(fatlink, 'creator') and fatlink.creator:
-        fleet_boss = fatlink.creator.character_name  # Falls `creator` existiert
-    elif hasattr(fatlink, 'character') and fatlink.character:
-        fleet_boss = fatlink.character.character_name  # Falls `character` existiert
+    if hasattr(fatlink.creator, 'eve_character'):
+        fleet_boss = fatlink.creator.eve_character.character_name
+    elif hasattr(fatlink.creator, 'profile') and hasattr(fatlink.creator.profile, 'character_name'):
+        fleet_boss = fatlink.creator.profile.character_name
     else:
-        logger.error("❌ Konnte den Fleet Commander nicht bestimmen!")
-        fleet_boss = "Unbekannt"
+        fleet_boss = fatlink.creator.username  # Falls nichts existiert, nehme den Django-Username
 
     doctrine_name = fatlink.doctrine or "Unbekannt"
     comms = "https://shorturl.at/Kg2ka"  # Standard Comms
@@ -256,6 +255,7 @@ def update_fleet_motd(request, token):
     except Exception as e:
         logger.exception(f"❌ Fehler beim Setzen der neuen MOTD: {e}")
         return
+
 
 def index(request):
     # Get the current month and year
