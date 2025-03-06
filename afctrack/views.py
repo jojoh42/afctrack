@@ -19,9 +19,6 @@ from .models import FittingsDoctrine
 
 logger = logging.getLogger(__name__)  # ✅ Logging setup
 
-urlpatterns = [
-    path('eve-sso-login/', eve_sso_login, name="eve_sso_login"),
-]
 
 # ESI API URLs
 ESI_FLEET_URL = "https://esi.evetech.net/latest/fleets/{fleet_id}/"
@@ -249,7 +246,7 @@ def update_fleet_motd(request):
 
         if fleet_response.status_code == 403:
             messages.error(request, "Dein Token hat nicht die erforderlichen Berechtigungen. Bitte logge dich erneut ein.")
-            return redirect("eve_sso_login")  # Benutzer erneut zur SSO-Login-Seite schicken
+            return redirect("/eve-sso-login/")  # Benutzer erneut zur SSO-Login-Seite schicken
         elif fleet_response.status_code != 200:
             messages.error(request, "Aktuelle Flotte konnte nicht abgerufen werden.")
             logger.error(f"ESI Fehler: {fleet_response.status_code}, {fleet_response.text}")
