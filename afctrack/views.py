@@ -238,7 +238,14 @@ def start_fleet(request):
         }
 
         # **MOTD-Update-Funktion aufrufen**
-        return redirect("afctrack:update_fleet_motd", fleet_boss=fleet_boss, doctrine_name=doctrine_name, fleet_type=fleet_type, comms=comms)
+        return redirect(
+            "afctrack:update_fleet_motd",
+            fleet_boss=fleet_boss,
+            doctrine_name=doctrine_name,
+            fleet_type=fleet_type,
+            comms=comms
+        )
+
 
     return render(request, "afctrack/start_fleet.html", {
         "doctrines": doctrines,
@@ -247,13 +254,8 @@ def start_fleet(request):
     })
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
-def update_fleet_motd(request, token):
-    fleet_boss = request.GET.get('fleet_boss')
-    doctrine_name = request.GET.get('doctrine_name')
-    fleet_type = request.GET.get('fleet_type')
-    comms = request.GET.get('comms')
-    """ Holt die aktuelle Flotten-ID aus FatLink und aktualisiert die MOTD. """
-    
+def update_fleet_motd(request, token, fleet_boss, doctrine_name, fleet_type, comms):
+    """ Updates the MOTD for the fleet """
     fatlink = FatLink.objects.filter(is_registered_on_esi=True).order_by('-created').first()
     if not fatlink:
         logger.warning("❌ Keine aktive Flotte (FatLink) gefunden.")
@@ -269,7 +271,7 @@ def update_fleet_motd(request, token):
     except Doctrine.DoesNotExist:
         logger.warning(f"⚠️ Doktrin '{doctrine_name}' existiert nicht. Standard-Link wird verwendet.")
 
-    # 2️⃣ **MOTD erstellen**
+    # MOTD erstellen
     motd = f"""´<br>
     <font size="14" color="#ffff0000">Staging:</font>   
     <font size="14" color="#ffd98d00"><loc><a href="showinfo:35834//1034323745897">P-ZMZV</a></loc></font><br>
@@ -284,7 +286,7 @@ def update_fleet_motd(request, token):
     <font size="13" color="#bfffffff">Logi Channel:</font> <font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font>
     """
 
-    # 3️⃣ **MOTD über ESI setzen**
+    # Set the MOTD via ESI
     try:
         response = esi_client_factory(token=token).Fleets.put_fleets_fleet_id(
             fleet_id=fleet_id, token=token.access_token, new_settings={"motd": motd}
@@ -295,8 +297,6 @@ def update_fleet_motd(request, token):
     except Exception as e:
         logger.exception(f"❌ Fehler beim Setzen der neuen MOTD: {e}")
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-
 
 def index(request):
     # Get the current month and year

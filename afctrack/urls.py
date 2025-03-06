@@ -8,5 +8,5 @@ urlpatterns = [
     path('doctrine_amount/', views.doctrine_amount, name='doctrine_amount'),
     path('fleet_type_amount/', views.fleet_type_amount, name='fleet_type_amount'),
     path('start_fleet/', views.start_fleet, name='start_fleet'),
-    path('update_fleet_motd/', views.update_fleet_motd, name='update_fleet_motd'),  # Add this line for the update_fleet_motd URL
+    path('update_fleet_motd/<str:fleet_boss>/<str:doctrine_name>/<str:fleet_type>/<str:comms>/', views.update_fleet_motd, name='update_fleet_motd'),
 ]
