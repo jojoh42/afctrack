@@ -194,12 +194,63 @@ def get_fleet_type_amount(selected_month, selected_year):
 
     return fleet_data
 
+def start_fleet(request):
+    """Ermöglicht das Erstellen einer neuen Flotte über das Formular in `start_fleet.html`."""
+    
+    doctrines = Doctrine.objects.all()  # Alle verfügbaren Doctrines abrufen
+    fleet_types = ["Peacetime", "StratOP", "Mining", "Hive"]  # Fleet-Typen
+    comms_options = [
+        {"name": "OP1", "url": "https://shorturl.at/Kg2ka"},
+        {"name": "OP2", "url": "https://shorturl.at/Kg2ka"},
+        {"name": "OP3", "url": "https://shorturl.at/Kg2ka"},
+        {"name": "OP4", "url": "https://shorturl.at/Kg2ka"},
+        {"name": "OP5", "url": "https://shorturl.at/Kg2ka"},
+    ]
+
+    if request.method == "POST":
+        fleet_boss = request.POST.get("fleet_boss")
+        fleet_name = request.POST.get("fleet_name")
+        doctrine_name = request.POST.get("doctrine")
+        fleet_type = request.POST.get("fleet_type")
+        comms = request.POST.get("comms")
+
+        if not all([fleet_boss, fleet_name, doctrine_name, fleet_type, comms]):
+            messages.error(request, "❌ Alle Felder müssen ausgefüllt werden!")
+            return render(request, "afctrack/start_fleet.html", {
+                "doctrines": doctrines,
+                "fleet_types": fleet_types,
+                "comms_options": comms_options,
+            })
+
+        try:
+            doctrine = Doctrine.objects.get(name=doctrine_name)
+        except Doctrine.DoesNotExist:
+            messages.error(request, "❌ Die ausgewählte Doktrin existiert nicht!")
+            return redirect("afctrack:start_fleet")
+
+        # 1️⃣ **Neue Flotte in der Datenbank speichern (optional, falls benötigt)**
+        fatlink = FatLink.objects.create(
+            creator=request.user,
+            doctrine=doctrine_name,
+            fleet_type=fleet_type,
+            esi_fleet_id=None,  # Falls die Flotten-ID noch nicht existiert, bleibt sie None
+            is_registered_on_esi=True  # Setzt die Flotte als aktiv
+        )
+
+        # 2️⃣ **Rufe die `update_fleet_motd`-Funktion auf, um die MOTD mit den neuen Daten zu setzen**
+        return update_fleet_motd(request, fleet_boss, doctrine_name, fleet_type, comms)
+
+    return render(request, "afctrack/start_fleet.html", {
+        "doctrines": doctrines,
+        "fleet_types": fleet_types,
+        "comms_options": comms_options,
+    })
+
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
-def update_fleet_motd(request, token):
-    """ Holt die aktuelle Flotten-ID aus FatLink, prüft die Doktrin und aktualisiert die MOTD. """
+def update_fleet_motd(request, token, fleet_boss, doctrine_name, fleet_type, comms):
+    """ Holt die aktuelle Flotten-ID aus FatLink und aktualisiert die MOTD. """
     
-    # 1️⃣ **Aktuelle Flotte holen**
     fatlink = FatLink.objects.filter(is_registered_on_esi=True).order_by('-created').first()
     if not fatlink:
         logger.warning("❌ Keine aktive Flotte (FatLink) gefunden.")
@@ -207,18 +258,7 @@ def update_fleet_motd(request, token):
 
     fleet_id = fatlink.esi_fleet_id
 
-    # 2️⃣ **Fleet Boss bestimmen**
-    if hasattr(fatlink.creator, 'eve_character'):
-        fleet_boss = fatlink.creator.eve_character.character_name
-    elif hasattr(fatlink.creator, 'profile') and hasattr(fatlink.creator.profile, 'character_name'):
-        fleet_boss = fatlink.creator.profile.character_name
-    else:
-        fleet_boss = fatlink.creator.username  # Falls nichts existiert, nehme den Django-Username
-
-    doctrine_name = fatlink.doctrine or "Unbekannt"
-    comms = "https://shorturl.at/Kg2ka"  # Standard Comms
-
-    # 3️⃣ **Doctrine-Link abrufen**
+    # Doctrine-Link abrufen
     doctrine_link = "N/A"
     try:
         doctrine_obj = Doctrine.objects.get(name=doctrine_name)
@@ -226,41 +266,33 @@ def update_fleet_motd(request, token):
     except Doctrine.DoesNotExist:
         logger.warning(f"⚠️ Doktrin '{doctrine_name}' existiert nicht. Standard-Link wird verwendet.")
 
-    # 4️⃣ **ESI Client erstellen**
-    esi = esi_client_factory(token=token)
-
-    # 5️⃣ **Neue MOTD setzen**
-    motd = f"""
+    # 2️⃣ **MOTD erstellen**
+    motd = f"""´<br>
     <font size="14" color="#ffff0000">Staging:</font>   
     <font size="14" color="#ffd98d00"><loc><a href="showinfo:35834//1034323745897">P-ZMZV</a></loc></font><br>
 
-    <font size="14" color="#bfffffff">FC:</font> 
-    <font size="14" color="#ffd98d00">{fleet_boss}</font><br>
+    <font size="14" color="#bfffffff">FC:</font> <font size="14" color="#ffd98d00">{fleet_boss}</font><br>
 
-    <font size="14" color="#ff00ff00">Doctrine Link:</font>
-    <font size="14" color="#bfffffff"><a href="{doctrine_link}">{doctrine_name}</a></font><br>
-    <font size="14" color="#ff00ff00">Comms:</font>
-    <font size="14" color="#ff6868e1"><a href="{comms}">{comms}</a></font><br>
+    <font size="14" color="#ff00ff00">Doctrine Link:</font> <font size="14" color="#bfffffff"><a href="{doctrine_link}">{doctrine_name}</a></font><br>
+    <font size="14" color="#ff00ff00">Comms:</font> <font size="14" color="#ff6868e1"><a href="{comms}">{comms}</a></font><br>
 
-    <font size="13" color="#bfffffff">Boost Channel:</font>
-    <font size="13" color="#ff6868e1"><a href="joinChannel:player_2ec80ee18cbb11eebe4600109bd0f828">IGC Boost</a></font><br>
+    <font size="13" color="#bfffffff">Boost Channel:</font> <font size="13" color="#ff6868e1"><a href="joinChannel:player_2ec80ee18cbb11eebe4600109bd0f828">IGC Boost</a></font><br>
 
-    <font size="13" color="#bfffffff">Logi Channel:</font>
-    <font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font>
+    <font size="13" color="#bfffffff">Logi Channel:</font> <font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font>
     """
 
-    # 6️⃣ **MOTD über ESI setzen**
+    # 3️⃣ **MOTD über ESI setzen**
     try:
-        response = esi.Fleets.put_fleets_fleet_id(
-    fleet_id=fleet_id, token=token.access_token, new_settings={"motd": motd}
-)
-
+        response = esi_client_factory(token=token).Fleets.put_fleets_fleet_id(
+            fleet_id=fleet_id, token=token.access_token, new_settings={"motd": motd}
+        )
+        api_response = response.result()
         logger.info(f"✅ Flotten-MOTD erfolgreich geändert: {motd}")
-        return JsonResponse({"status": "success", "message": "MOTD erfolgreich gesetzt", "esi_response": response.result()}, status=200)
-
+        return JsonResponse({"status": "success", "message": "MOTD erfolgreich gesetzt", "esi_response": api_response}, status=200)
     except Exception as e:
         logger.exception(f"❌ Fehler beim Setzen der neuen MOTD: {e}")
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
 
 
 def index(request):
@@ -358,48 +390,3 @@ def fleet_type_amount(request):
     }
 
     return render(request, "afctrack/fleet_type_amount.html", context)
-
-def start_fleet(request):
-    """Ermöglicht das Erstellen einer neuen Flotte über das Formular in `start_fleet.html`."""
-    
-    doctrines = Doctrine.objects.all()  # Alle verfügbaren Doctrines abrufen
-    fleet_types = ["Peacetime", "StratOP", "Mining", "Hive"]  # Fleet-Typen
-    comms_options = [
-        {"name": "OP1", "url": "https://shorturl.at/Kg2ka"},
-        {"name": "OP2", "url": "https://shorturl.at/Kg2ka"},
-        {"name": "OP3", "url": "https://shorturl.at/Kg2ka"},
-        {"name": "OP4", "url": "https://shorturl.at/Kg2ka"},
-        {"name": "OP5", "url": "https://shorturl.at/Kg2ka"},
-    ]
-
-    if request.method == "POST":
-        fleet_boss = request.POST.get("fleet_boss")
-        fleet_name = request.POST.get("fleet_name")
-        doctrine_name = request.POST.get("doctrine")
-        fleet_type = request.POST.get("fleet_type")
-        comms = request.POST.get("comms")
-
-        if not all([fleet_boss, fleet_name, doctrine_name, fleet_type, comms]):
-            messages.error(request, "❌ Alle Felder müssen ausgefüllt werden!")
-            return render(request, "afctrack/start_fleet.html", {
-                "doctrines": doctrines,
-                "fleet_types": fleet_types,
-                "comms_options": comms_options,
-            })
-
-        try:
-            doctrine = Doctrine.objects.get(name=doctrine_name)
-        except Doctrine.DoesNotExist:
-            messages.error(request, "❌ Die ausgewählte Doktrin existiert nicht!")
-            return redirect("afctrack:start_fleet")
-
-        # Hier könnte Code kommen, um die Flotte in der Datenbank zu speichern, falls nötig
-
-        messages.success(request, f"✅ Flotte '{fleet_name}' wurde erfolgreich erstellt!")
-        return redirect("afctrack:index")  # Weiterleitung zur Hauptseite nach erfolgreicher Erstellung
-
-    return render(request, "afctrack/start_fleet.html", {
-        "doctrines": doctrines,
-        "fleet_types": fleet_types,
-        "comms_options": comms_options,
-    })
