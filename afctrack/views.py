@@ -10,7 +10,7 @@ from django.db.models import Count, Sum
 from django.contrib import messages
 from django.shortcuts import redirect
 from django.db import connection
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import path, reverse
 from afat.models import FatLink, Doctrine, Fat # Fleet gibt es nicht, daher nutzen wir FatLink
 from esi.clients import esi_client_factory
@@ -238,7 +238,7 @@ def start_fleet(request):
         "fleet_types": fleet_types,
         "comms_options": comms_options,
     })
-    
+
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(request, token, fleet_boss, doctrine_name, fleet_type, comms):
     """ Updates the MOTD for the fleet """
