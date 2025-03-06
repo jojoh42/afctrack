@@ -13,7 +13,7 @@ from afat.models import FatLink, Fat
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS
 from .models import FittingsDoctrine
-from esi.models import EsiToken
+from esi_token.models import EsiToken
 
 logger = logging.getLogger(__name__)  # ✅ Logging setup
 
