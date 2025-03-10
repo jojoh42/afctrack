@@ -299,7 +299,6 @@ def create_esi_fleet(request, token):
     response = HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
 
     # Wait for 20 seconds before updating the MOTD
-    time.sleep(20)
 
     # Find the fleet after waiting
     fatlink = FatLink.objects.filter(hash=fatlink_hash, is_registered_on_esi=True).first()
