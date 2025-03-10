@@ -9,6 +9,7 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from afat.models import FatLink, Doctrine, Fat  # Fleet gibt es nicht, daher nutzen wir FatLink
+from afat.utils import get_hash_on_save # Funktion zum Erzeugen eines Hashes
 from esi.clients import esi_client_factory
 from esi.decorators import token_required
 from fittings.models import Doctrine
@@ -265,7 +266,8 @@ def start_fleet(request):
 
         # Redirect to the update_fleet_motd view
         try:
-            return HttpResponseRedirect(reverse('afat:fatlinks_create_esi_fatlink_callback'))
+            fatlink_hash = get_hash_on_save()  # Erzeuge einen neuen FAT-Link-Hash
+            return HttpResponseRedirect(reverse('fatlinks_create_esi_fatlink_callback', args=[fatlink_hash]))
         except Exception as e:
             logger.exception(f"❌ Error redirecting to update_fleet_motd: {e}")
             messages.error(request, "❌ Error redirecting to update_fleet_motd")
