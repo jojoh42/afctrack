@@ -20,6 +20,8 @@ from afat.views.fatlinks import create_esi_fatlink_callback
 from esi.decorators import token_required
 from afat.models import get_hash_on_save
 from esi.models import Token
+from celery import shared_task
+from .tasks import delayed_update_fleet_motd
 
 logger = logging.getLogger(__name__)  # ✅ Logging setup
 
@@ -282,12 +284,12 @@ def start_fleet(request):
         "fleet_types": fleet_types,
         "comms_options": comms_options,
     })
+
 @token_required(scopes=['esi-fleets.read_fleet.v1'])
 def create_esi_fleet(request, token):
     """
     Creates an ESI FAT link and redirects to the AFAT callback function.
     """
-
     fatlink_hash = get_hash_on_save()
 
     # Store fleet info in session
@@ -295,9 +297,13 @@ def create_esi_fleet(request, token):
     request.session["fatlink_form__doctrine"] = "Fleet Doctrine"
     request.session["fatlink_form__type"] = "Fleet Type"
 
-    # Corrected: Pass fatlink_hash as a positional argument
-    return HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
+    # Redirect zur FATLink-Erstellung
+    response = HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
 
+    # Starte Celery-Task mit Wartezeit
+    delayed_update_fleet_motd.apply_async(args=[request.session], countdown=20)
+
+    return response
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(request, token):
     """Updates the MOTD for the fleet."""
