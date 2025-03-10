@@ -19,7 +19,7 @@ from afat.views.fatlinks import create_esi_fatlink, add_fatlink  # Verwende AFAT
 from esi.clients import esi_client_factory
 from esi.decorators import token_required
 from fittings.models import Doctrine
-from esi.models import Token, CallbackRedireckt
+from esi.models import Token, CallbackRedirect
 from esi.decorators import token_required
 from afat.views.fatlinks import *
 from afat.models import *
