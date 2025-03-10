@@ -14,7 +14,7 @@ from django.db import connection
 from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import path, reverse
 from afat.models import FatLink, Doctrine, Fat  # Fleet gibt es nicht, daher nutzen wir FatLink
-from afat.views.fatlinks import create_esi_fatlink  # Verwende AFAT Funktion
+from afat.views.fatlinks import create_esi_fatlink, add_fatlink  # Verwende AFAT Funktion
 from esi.clients import esi_client_factory
 from esi.decorators import token_required
 from fittings.models import Doctrine
@@ -212,34 +212,21 @@ def start_fleet(request):
         response = create_esi_fatlink(request)
 
         # 3️⃣ **DB kurz warten lassen, falls ESI verzögert ist**
-        time.sleep(2)  # ⏳ Wartezeit, um die DB-Synchronisation zu ermöglichen
+        time.sleep(2)  
 
         # 4️⃣ **`FatLink`-Objekt suchen**
         fatlink = FatLink.objects.filter(creator=request.user, fleet=fleet_name).order_by('-created').first()
 
         if not fatlink:
-            logger.error("❌ Fehler: FatLink wurde nicht erstellt!")
-            messages.error(request, "❌ Fehler: FatLink wurde nicht erstellt.")
+            logger.error("❌ Fehler: FAT-Link wurde nicht erstellt!")
+            messages.error(request, "❌ Fehler: FAT-Link wurde nicht erstellt.")
             return redirect("afctrack:start_fleet")
 
-        if not fatlink.esi_fleet_id:
-            logger.error(f"❌ Fehler: Keine ESI Fleet ID erhalten! FatLink-Daten: {fatlink}")
-            messages.error(request, "❌ Fehler: Keine gültige ESI Fleet ID erhalten.")
-            return redirect("afctrack:start_fleet")
+        # 5️⃣ **FAT automatisch hinzufügen**
+        request.POST = {"fatlink_hash": fatlink.hash}  # Setze den FAT-Link Hash
+        add_fatlink(request)
 
-        logger.info(f"✅ ESI FAT-Link erstellt: {fatlink.hash} | Fleet-ID: {fatlink.esi_fleet_id}")
-
-        # 5️⃣ **FAT-Eintrag für den FC erstellen**
-        try:
-            Fat.objects.create(
-                fatlink=fatlink,
-                character=request.user.profile.main_character,
-                system="Unbekannt",
-                shiptype="Unbekannt"
-            )
-            logger.info(f"✅ FAT für {request.user} erstellt in Fleet: {fleet_name}")
-        except Exception as e:
-            logger.error(f"❌ Fehler beim Erstellen des FAT-Eintrags: {e}")
+        logger.info(f"✅ FAT automatisch für Fleet '{fleet_name}' erstellt.")
 
         # 6️⃣ **Weiter zur MOTD-Update-Funktion**
         return response
@@ -249,6 +236,7 @@ def start_fleet(request):
         "fleet_types": fleet_types,
         "comms_options": comms_options,
     })
+
 
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
