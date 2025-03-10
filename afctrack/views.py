@@ -1,24 +1,19 @@
 import calendar
-import requests
-import json
 import logging
 from datetime import datetime
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render
 from django.contrib.auth.models import User
-from django.db.models import Count, Sum
+from django.db.models import Count
 from django.contrib import messages
-from django.shortcuts import redirect
-from django.db import connection
-from django.http import JsonResponse, HttpResponseRedirect
-from django.urls import path, reverse
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 from afat.models import FatLink, Doctrine, Fat  # Fleet gibt es nicht, daher nutzen wir FatLink
 from esi.clients import esi_client_factory
 from esi.decorators import token_required
 from fittings.models import Doctrine
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS, DEFAULT_BUDGET,FLEET_TYPES, COMMS_OPTIONS
-from .models import FittingsDoctrine
 
 logger = logging.getLogger(__name__)  # ✅ Logging setup
 
@@ -29,7 +24,7 @@ ESI_UPDATE_MOTD_URL = "https://esi.evetech.net/latest/fleets/{fleet_id}/motd/"
 ESI_CHARACTER_FLEET_URL = "https://esi.evetech.net/latest/characters/{character_id}/fleet/"
 
 @login_required
-@permission_required("afctrack.full_access")
+@permission_required("afctrack.basic_access")
 def get_fleet_counts_and_payment(request, budget, selected_month, selected_year):
     print(f"Request user: {request.user}")
     """

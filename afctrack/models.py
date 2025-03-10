@@ -13,7 +13,6 @@ class General(models.Model):
         default_permissions = ()  # No default permissions
         permissions = (
             ("basic_access", "can create an MOTD"),
-            ("full_access", "Can View Fleet Stats"),
         )
 
 # Doctrine points
