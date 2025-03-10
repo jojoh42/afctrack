@@ -218,15 +218,25 @@ def start_fleet(request):
         fatlink = FatLink.objects.filter(creator=request.user, fleet=fleet_name).order_by('-created').first()
 
         if not fatlink:
-            logger.error("❌ Fehler: FAT-Link wurde nicht erstellt!")
-            messages.error(request, "❌ Fehler: FAT-Link wurde nicht erstellt.")
+            logger.error(f"❌ Fehler: FAT-Link wurde nicht erstellt für Fleet '{fleet_name}'! Mögliche Gründe:")
+            logger.error("👉 Fehler in der API oder fehlende Berechtigungen.")
+            logger.error("👉 ESI-Antwort war möglicherweise fehlerhaft oder verzögert.")
+            logger.error(f"👉 Gespeicherte Daten: Fleet-Name='{fleet_name}', Doctrine='{doctrine_name}', Type='{fleet_type}'")
+
+            messages.error(request, "❌ Fehler: FAT-Link wurde nicht erstellt. Sieh in die Logs für mehr Infos.")
             return redirect("afctrack:start_fleet")
 
-        # 5️⃣ **FAT automatisch hinzufügen**
-        request.POST = {"fatlink_hash": fatlink.hash}  # Setze den FAT-Link Hash
-        add_fatlink(request)
+        logger.info(f"✅ FAT-Link erfolgreich erstellt: {fatlink.hash}")
 
-        logger.info(f"✅ FAT automatisch für Fleet '{fleet_name}' erstellt.")
+        # 5️⃣ **FAT automatisch hinzufügen**
+        try:
+            request.POST = {"fatlink_hash": fatlink.hash}  # Setze den FAT-Link Hash
+            add_fatlink(request)
+            logger.info(f"✅ FAT automatisch für Fleet '{fleet_name}' erstellt.")
+        except Exception as e:
+            logger.error(f"❌ Fehler beim Erstellen des FAT für Fleet '{fleet_name}': {e}")
+            messages.error(request, f"❌ Fehler: FAT konnte nicht erstellt werden. Details: {str(e)}")
+            return redirect("afctrack:start_fleet")
 
         # 6️⃣ **Weiter zur MOTD-Update-Funktion**
         return response
@@ -236,6 +246,7 @@ def start_fleet(request):
         "fleet_types": fleet_types,
         "comms_options": comms_options,
     })
+
 
 
 
