@@ -225,7 +225,7 @@ def start_fleet(request):
 
         # 4️⃣ **FAT-Link über `create_esi_fatlink_callback` registrieren**
         try:
-            response = create_esi_fatlink_callback(request, esi_token, fatlink_hash)
+            response = create_esi_fatlink_callback(request, fatlink_hash)
             logger.info(f"✅ ESI FAT-Link erfolgreich erstellt für Fleet '{fleet_name}' mit Hash {fatlink_hash}")
         except Exception as e:
             logger.error(f"❌ Fehler bei `create_esi_fatlink_callback`: {e}", exc_info=True)
