@@ -215,13 +215,13 @@ def start_fleet(request):
         request.session["fatlink_form__doctrine"] = doctrine_name
         request.session["fatlink_form__type"] = fleet_type
 
-        # 3️⃣ **Hole das ESI-Token des Fleet-Bosses**
-        try:
-            esi_token = Token.objects.get(character_id=request.user.profile.main_character.character_id)
-        except Token.DoesNotExist:
-            logger.error(f"❌ Kein ESI-Token für {request.user} gefunden!")
-            messages.error(request, "❌ Fehler: Kein gültiges ESI-Token gefunden. Bitte reloggen!")
-            return redirect("afctrack:start_fleet")
+        # # 3️⃣ **Hole das ESI-Token des Fleet-Bosses**
+        # try:
+        #     esi_token = Token.objects.get(character_id=request.user.profile.main_character.character_id)
+        # except Token.DoesNotExist:
+        #     logger.error(f"❌ Kein ESI-Token für {request.user} gefunden!")
+        #     messages.error(request, "❌ Fehler: Kein gültiges ESI-Token gefunden. Bitte reloggen!")
+        #     return redirect("afctrack:start_fleet")
 
         # 4️⃣ **FAT-Link über `create_esi_fatlink_callback` registrieren**
         try:
