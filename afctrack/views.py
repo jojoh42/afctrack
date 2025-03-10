@@ -14,7 +14,7 @@ from esi.decorators import token_required
 from fittings.models import Doctrine
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS, DEFAULT_BUDGET,FLEET_TYPES, COMMS_OPTIONS
-from afat.views.fatlinks.py import create_esi_fatlink_callback
+from afat.views.fatlinks import create_esi_fatlink_callback
 
 logger = logging.getLogger(__name__)  # ✅ Logging setup
 
