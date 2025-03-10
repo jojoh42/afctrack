@@ -242,14 +242,13 @@ def update_fleet_motd(request, token):
         messages.warning(request, f"⚠️ Doktrin '{doctrine_name}' existiert nicht. Standard-Link wird verwendet.")
 
     # MOTD erstellen
-    motd = f"""
-            <font size="14" color="#ffff0000">Staging:</font><font size="14" color="#bfffffff"></font><font size="14" color="#ffd98d00"><loc><a href="showinfo:35834//1034323745897">P-ZMZV</a></loc></font>
-            <font size="14" color="#bfffffff">FC: </font><font size="14" color="#ffd98d00">{fleet_boss}</font>
-            <font size="14" color="#ff00ff00">Doctrine Link:</font><font size="14" color="#bfffffff"> </font><font size="14" color="#ffffe400"><a href="{doctrine_link}">{doctrine_name}</a></font>
-            <font size="14" color="#ff00ff00">Comms:</font><font size="14" color="#bfffffff"> </font><font size="14" color="#ffffe400"><a href="{comms}">{comms}</a></font>
-            <font size="13" color="#bfffffff">Boost Channel:</font><font size="14" color="#bfffffff"> </font><font size="13" color="#ff6868e1"><a href="joinChannel:player_2ec80ee18cbb11eebe4600109bd0f828">IGC Boost</a></font>
-            <font size="13" color="#bfffffff">Logi Channel:</font><font size="14" color="#bfffffff"> </font><font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font>
-            <font size="14" color="#bfffffff"></font>"""
+    motd = f"""<font size="14" color="#ffff0000">Staging:</font><font size="14" color="#bfffffff"></font><font size="14" color="#ffd98d00"><loc><a href="showinfo:35834//1034323745897">P-ZMZV</a></loc></font>
+<font size="14" color="#bfffffff">FC: </font><font size="14" color="#ffd98d00">{fleet_boss}</font>
+<font size="14" color="#ff00ff00">Doctrine Link:</font><font size="14" color="#bfffffff"></font><font size="14" color="#ffffe400"><a href="{doctrine_link}">{doctrine_name}</a></font>
+<font size="14" color="#ff00ff00">Comms:</font><font size="14" color="#bfffffff"></font><font size="14" color="#ffffe400"><a href="{comms}">{comms}</a></font>
+<font size="13" color="#bfffffff">Boost Channel:</font><font size="14" color="#bfffffff"></font><font size="13" color="#ff6868e1"><a href="joinChannel:player_2ec80ee18cbb11eebe4600109bd0f828">IGC Boost</a></font>
+<font size="13" color="#bfffffff">Logi Channel:</font><font size="14" color="#bfffffff"></font><font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font>
+<font size="14" color="#bfffffff"></font>"""
 
     # Set the MOTD via ESI
     try:
