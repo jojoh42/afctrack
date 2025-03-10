@@ -13,6 +13,7 @@ from django.shortcuts import redirect
 from django.db import connection
 from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import path, reverse
+from django.utils import timezone
 from afat.models import FatLink, Doctrine, Fat  # Fleet gibt es nicht, daher nutzen wir FatLink
 from afat.views.fatlinks import create_esi_fatlink, add_fatlink  # Verwende AFAT Funktion
 from esi.clients import esi_client_factory
@@ -20,7 +21,8 @@ from esi.decorators import token_required
 from fittings.models import Doctrine
 from esi.models import Token
 from esi.decorators import token_required
-from afat.views.fatlinks import create_esi_fatlink_callback
+from afat.views.fatlinks import *
+from afat.models import *
 from afat.models import get_hash_on_save
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -178,9 +180,10 @@ def get_fleet_type_amount(selected_month, selected_year):
 
 @login_required
 @permission_required("afctrack.basic_access")
+@token_required(scopes=['esi-fleets.read_fleet.v1'])
 def start_fleet(request):
-    """Startet eine neue Flotte, registriert sie über ESI und erstellt einen FAT-Eintrag."""
-
+    """Handles the fleet creation form and automatically creates a FAT link after submission."""
+    
     doctrines = Doctrine.objects.all()
     fleet_types = ["Peacetime", "StratOP", "Mining", "Hive"]
 
@@ -204,43 +207,59 @@ def start_fleet(request):
         comms = request.POST.get("comms")
 
         if not all([fleet_boss, fleet_name, doctrine_name, fleet_type, comms]):
-            messages.error(request, "❌ Alle Felder müssen ausgefüllt sein!")
+            messages.error(request, "❌ All fields must be filled!")
             return render(request, "afctrack/start_fleet.html", {
                 "doctrines": doctrines,
                 "fleet_types": fleet_types,
                 "comms_options": comms_options,
             })
 
-        logger.info(f"📡 Starte ESI FAT-Link Registrierung für Fleet '{fleet_name}' durch {request.user}")
+        # Save data in session
+        request.session['fleet_boss'] = fleet_boss
+        request.session['doctrine_name'] = doctrine_name
+        request.session['fleet_type'] = fleet_type
+        request.session['comms'] = comms
 
-        # 1️⃣ **Erstelle einen eindeutigen FAT-Link Hash**
-        fatlink_hash = get_hash_on_save()
-
-        # 2️⃣ **Session-Daten setzen**
-        request.session["fatlink_form__name"] = fleet_name
-        request.session["fatlink_form__doctrine"] = doctrine_name
-        request.session["fatlink_form__type"] = fleet_type
-        request.session["fatlink_hash"] = fatlink_hash  # Wichtiger Schritt!
-
-        # 3️⃣ **Prüfe, ob ein ESI-Token existiert**
-        esi_token = Token.objects.filter(
-            character_id=request.user.profile.main_character.character_id
-        ).order_by('-created').first()
-
-        if not esi_token:
-            logger.warning(f"⚠️ Kein gültiges ESI-Token für {request.user} gefunden, Weiterleitung zum ESI-Login...")
-            return redirect(reverse("esi:login"))  # Umleitung zum ESI-Auth
-
-        # 4️⃣ **FAT-Link über `create_esi_fatlink_callback` registrieren**
+        # Automatically create FAT link
         try:
-            response = create_esi_fatlink_callback(request, esi_token, fatlink_hash)
-            logger.info(f"✅ ESI FAT-Link erfolgreich erstellt für Fleet '{fleet_name}' mit Hash {fatlink_hash}")
-        except Exception as e:
-            logger.error(f"❌ Fehler bei `create_esi_fatlink_callback`: {e}", exc_info=True)
-            messages.error(request, f"❌ Fehler: FAT-Link konnte nicht über ESI erstellt werden. Details: {str(e)}")
-            return redirect("afctrack:start_fleet")
+            # Get the fleet information from the session
+            fleet_boss_character = EveCharacter.objects.get(character_name=fleet_boss)
+            # Create the FAT Link
+            fatlink_hash = get_hash_on_save()
 
-        return response  # Weiterleitung basierend auf `create_esi_fatlink_callback`
+            new_fatlink = FatLink(
+                created=timezone.now(),
+                fleet=fleet_name,
+                hash=fatlink_hash,
+                creator=request.user,
+                character=fleet_boss_character,
+                is_esilink=True,
+                is_registered_on_esi=True,  # Assuming this is an ESI link
+                fleet_type=fleet_type,
+                doctrine=doctrine_name,
+            )
+            new_fatlink.save()
+
+            # Set the default duration of the FAT link (e.g., 60 minutes)
+            duration = Duration(fleet=new_fatlink, duration=60)  # 60 minutes as default
+            duration.save()
+
+            # Log the creation of the FAT link
+            write_log(
+                request=request,
+                log_event=Log.Event.CREATE_FATLINK,
+                log_text=f"Automatisch erstellter FAT-Link für Fleet {fleet_name}",
+                fatlink_hash=fatlink_hash,
+            )
+
+            messages.success(request, "✅ FAT-Link erfolgreich erstellt für die Flotte!")
+
+        except Exception as e:
+            logger.exception(f"❌ Fehler beim Erstellen des FAT-Links: {str(e)}")
+            messages.error(request, "❌ Es gab einen Fehler bei der Erstellung des FAT-Links.")
+        
+        # Redirect to the update_motd page to set MOTD for the fleet
+        return HttpResponseRedirect(reverse('afctrack:update_fleet_motd'))
 
     return render(request, "afctrack/start_fleet.html", {
         "doctrines": doctrines,
