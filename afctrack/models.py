@@ -8,11 +8,11 @@ class General(models.Model):
         """Meta definitions"""
         
         # This model is not intended to be managed by Django (e.g., not to be migrated)
-        managed = True
+        managed = False
         default_permissions = ()
         permissions = (
             ("basic_access", "Can access this app"),
-            ("motd_access","Can create an MOTD"),
+            ("motd_access", "Can create an MOTD"),
         )
 
 # Doctrine points
