@@ -212,7 +212,6 @@ def start_fleet(request):
         "comms_options": comms_options,
     })
 
-
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(request, token):
     """Updates the MOTD for the fleet."""

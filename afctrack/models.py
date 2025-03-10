@@ -12,6 +12,7 @@ class General(models.Model):
         default_permissions = ()
         permissions = (
             ("basic_access", "Can access this app"),
+            ("motd_access","Can create an MOTD")
         )
 
 # Doctrine points
