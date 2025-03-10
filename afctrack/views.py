@@ -168,13 +168,17 @@ def start_fleet(request):
     """Handles the fleet creation form and updates the MOTD after submission."""
     
     doctrines = Doctrine.objects.all()
-    fleet_types = ["Peacetime", "StratOP", "Mining", "Hive"]
+    fleet_types = ["Peacetime", "StratOP", "Mining", "Hive", "CTA"]
     comms_options = [
-        {"name": "OP1", "url": "https://shorturl.at/Kg2ka"},
-        {"name": "OP2", "url": "https://shorturl.at/Kg2ka"},
-        {"name": "OP3", "url": "https://shorturl.at/Kg2ka"},
-        {"name": "OP4", "url": "https://shorturl.at/Kg2ka"},
-        {"name": "OP5", "url": "https://shorturl.at/Kg2ka"},
+        {"name": "Capital OP", "url": "https://tinyurl.com/ywwp85u9"},
+        {"name": "OP1-Stratergic", "url": "https://tinyurl.com/IGCOP1"},
+        {"name": "OP2-Home Defense", "url": "https://tinyurl.com/IGCOP2"},
+        {"name": "OP3-CTA", "url": "https://tinyurl.com/3m64n62p"},
+        {"name": "OP4-Moon Event", "url": "https://tinyurl.com/mrh6436r"},
+        {"name": "OP5-ICE Event", "url": "https://tinyurl.com/mr5sspda"},
+        {"name": "OP6 - Peacetime", "url": "https://tinyurl.com/ymusr8k9"},
+        {"name": "OP7 - Peacetime", "url": "https://tinyurl.com/bp7r58ep"},
+        {"name": "OP8 - Peacetime", "url": "https://tinyurl.com/2dbcwwcu"}
     ]
 
     if request.method == "POST":
