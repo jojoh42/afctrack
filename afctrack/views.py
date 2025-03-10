@@ -180,8 +180,8 @@ def get_fleet_type_amount(selected_month, selected_year):
 
 @login_required
 @permission_required("afctrack.basic_access")
-@token_required(scopes=['esi-fleets.read_fleet.v1'])
-def start_fleet(request):
+@token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
+def start_fleet(request, token):
     """Handles the fleet creation form and automatically creates a FAT link after submission."""
     
     doctrines = Doctrine.objects.all()
