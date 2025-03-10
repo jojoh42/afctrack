@@ -169,7 +169,7 @@ logger = logging.getLogger(__name__)
 
 def start_fleet(request):
     """Startet eine neue Flotte, registriert sie über ESI und erstellt einen FAT-Eintrag."""
-    
+
     doctrines = Doctrine.objects.all()
     fleet_types = ["Peacetime", "StratOP", "Mining", "Hive"]
 
@@ -237,6 +237,7 @@ def start_fleet(request):
         "fleet_types": fleet_types,
         "comms_options": comms_options,
     })
+
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(request, token):
