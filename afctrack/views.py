@@ -265,7 +265,6 @@ def start_fleet(request):
 
         # Redirect to the update_fleet_motd view
         try:
-            fatlink_hash = get_hash_on_save()  # Erzeuge einen neuen FAT-Link-Hash
             return HttpResponseRedirect(reverse('fatlinks_create_esi_fatlink_callback'))
         except Exception as e:
             logger.exception(f"❌ Error redirecting to update_fleet_motd: {e}")
