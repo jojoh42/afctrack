@@ -21,6 +21,10 @@ from fittings.models import Doctrine
 from esi.models import Token
 from afat.views.fatlinks import create_esi_fatlink_callback
 from afat.models import get_hash_on_save
+from esi.models import Token
+from esi.decorators import token_required
+from afat.views.fatlinks import create_esi_fatlink_callback
+from afat.models import get_hash_on_save
 
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS
@@ -170,8 +174,10 @@ def get_fleet_type_amount(selected_month, selected_year):
 
     return fleet_data
 
-logger = logging.getLogger(__name__)
 
+
+@login_required
+@permission_required("afctrack.basic_access")
 def start_fleet(request):
     """Startet eine neue Flotte, registriert sie über ESI und erstellt einen FAT-Eintrag."""
 
@@ -215,17 +221,19 @@ def start_fleet(request):
         request.session["fatlink_form__doctrine"] = doctrine_name
         request.session["fatlink_form__type"] = fleet_type
 
-        # # 3️⃣ **Hole das ESI-Token des Fleet-Bosses**
-        # try:
-        #     esi_token = Token.objects.get(character_id=request.user.profile.main_character.character_id)
-        # except Token.DoesNotExist:
-        #     logger.error(f"❌ Kein ESI-Token für {request.user} gefunden!")
-        #     messages.error(request, "❌ Fehler: Kein gültiges ESI-Token gefunden. Bitte reloggen!")
-        #     return redirect("afctrack:start_fleet")
+        # 3️⃣ **Hole das ESI-Token des Fleet-Bosses**
+        esi_token = Token.objects.filter(
+            character_id=request.user.profile.main_character.character_id
+        ).order_by('-created').first()
+
+        if not esi_token:
+            logger.error(f"❌ Kein ESI-Token für {request.user} gefunden! Umleitung zur ESI-Authentifizierung...")
+            messages.error(request, "❌ Fehler: Kein gültiges ESI-Token gefunden. Bitte reloggen!")
+            return redirect("esi:login")  # Umleitung zum ESI-Login
 
         # 4️⃣ **FAT-Link über `create_esi_fatlink_callback` registrieren**
         try:
-            response = create_esi_fatlink_callback(request, fatlink_hash)
+            response = create_esi_fatlink_callback(request, esi_token, fatlink_hash)
             logger.info(f"✅ ESI FAT-Link erfolgreich erstellt für Fleet '{fleet_name}' mit Hash {fatlink_hash}")
         except Exception as e:
             logger.error(f"❌ Fehler bei `create_esi_fatlink_callback`: {e}", exc_info=True)
@@ -239,6 +247,7 @@ def start_fleet(request):
         "fleet_types": fleet_types,
         "comms_options": comms_options,
     })
+
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(request, token):
