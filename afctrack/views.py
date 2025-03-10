@@ -13,6 +13,7 @@ from django.db import connection
 from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import path, reverse
 from afat.models import FatLink, Doctrine, Fat  # Fleet gibt es nicht, daher nutzen wir FatLink
+from afat.views.fatlinks import create_esi_fatlink  # Verwende AFAT Funktion
 from esi.clients import esi_client_factory
 from esi.decorators import token_required
 from fittings.models import Doctrine
@@ -167,10 +168,11 @@ def get_fleet_type_amount(selected_month, selected_year):
 logger = logging.getLogger(__name__)
 
 def start_fleet(request):
-    """Startet eine neue Flotte und registriert sie zuerst über FatLink (ESI Tracker von afat)."""
-
+    """Startet eine neue Flotte, registriert sie über ESI und erstellt einen FAT-Eintrag."""
+    
     doctrines = Doctrine.objects.all()
     fleet_types = ["Peacetime", "StratOP", "Mining", "Hive"]
+
     comms_options = [
         {"name": "Capital OP", "url": "https://tinyurl.com/ywwp85u9"},
         {"name": "OP1-Stratergic", "url": "https://tinyurl.com/IGCOP1"},
@@ -178,9 +180,9 @@ def start_fleet(request):
         {"name": "OP3-CTA", "url": "https://tinyurl.com/3m64n62p"},
         {"name": "OP4-Moon Event", "url": "https://tinyurl.com/mrh6436r"},
         {"name": "OP5-ICE Event", "url": "https://tinyurl.com/mr5sspda"},
-        {"name": "OP6 - Pacetime", "url": "https://tinyurl.com/ymusr8k9"},
-        {"name": "OP7 - Pacetime", "url": "https://tinyurl.com/bp7r58ep"},
-        {"name": "OP8 - Pacetime", "url": "https://tinyurl.com/2dbcwwcu"}
+        {"name": "OP6 - Peacetime", "url": "https://tinyurl.com/ymusr8k9"},
+        {"name": "OP7 - Peacetime", "url": "https://tinyurl.com/bp7r58ep"},
+        {"name": "OP8 - Peacetime", "url": "https://tinyurl.com/2dbcwwcu"}
     ]
 
     if request.method == "POST":
@@ -198,46 +200,43 @@ def start_fleet(request):
                 "comms_options": comms_options,
             })
 
-        # 🛠 **1. Neue Flotte mit `FatLink` in ESI registrieren**
+        # 🛠 **1. Setze Session-Daten für AFAT**
+        request.session["fatlink_form__name"] = fleet_name
+        request.session["fatlink_form__doctrine"] = doctrine_name
+        request.session["fatlink_form__type"] = fleet_type
+
+        # 🛠 **2. Rufe die AFAT-Funktion `create_esi_fatlink()` auf**
+        response = create_esi_fatlink(request)
+
+        # 🛠 **3. Hole das letzte erstellte FatLink-Objekt**
+        fatlink = FatLink.objects.filter(
+            creator=request.user, fleet=fleet_name
+        ).order_by('-created').first()
+
+        if not fatlink or not fatlink.esi_fleet_id:
+            messages.error(request, "❌ Fehler: Keine gültige ESI Fleet ID erhalten.")
+            return redirect("afctrack:start_fleet")
+
+        # 🛠 **4. Erstelle einen FAT-Eintrag für den Flottenleiter**
         try:
-            fat_entry = FatLink.objects.create(
-                fleet=fleet_name,
-                creator=request.user,
-                doctrine=doctrine_name,
-                fleet_type=fleet_type,
-                is_registered_on_esi=True  # Falls `FatLink` selbst eine ESI-Registierung übernimmt
+            Fat.objects.create(
+                fatlink=fatlink,
+                character=request.user.profile.main_character,  # FC wird als Teilnehmer erfasst
+                system="Unbekannt",  # Falls du den aktuellen System-Namen brauchst, kannst du ihn per ESI abrufen
+                shiptype="Unbekannt"  # Falls du den aktuellen Ship-Type brauchst, ebenfalls per ESI abrufbar
             )
-            if not fat_entry or not fat_entry.esi_fleet_id:
-                raise ValueError("Keine gültige ESI Fleet ID erhalten.")
-
-            esi_fleet_id = fat_entry.esi_fleet_id  # ESI Fleet ID für die Weiterverarbeitung speichern
-            logger.info(f"✅ Fleet erfolgreich über `FatLink` in ESI registriert mit ID: {esi_fleet_id}")
-
+            logger.info(f"✅ FAT für {request.user} erstellt in Fleet: {fleet_name}")
         except Exception as e:
-            logger.exception("❌ Fehler beim Starten der Fleet über `FatLink`")
-            messages.error(request, f"Fehler beim Starten der Fleet über `FatLink`: {e}")
-            return render(request, "afctrack/start_fleet.html", {
-                "doctrines": doctrines,
-                "fleet_types": fleet_types,
-                "comms_options": comms_options,
-            })
+            logger.error(f"❌ Fehler beim Erstellen des FAT-Eintrags: {e}")
 
-        # 🛠 **2. Session-Daten für MOTD setzen**
-        request.session['fleet_boss'] = fleet_boss
-        request.session['doctrine_name'] = doctrine_name
-        request.session['fleet_type'] = fleet_type
-        request.session['comms'] = comms
-        request.session['esi_fleet_id'] = esi_fleet_id  # Speichern für MOTD Update
-
-        # 🚀 **3. Weiter zur MOTD-Update-Funktion**
-        return redirect(reverse('afctrack:update_fleet_motd'))
+        # 🚀 **5. Weiter zur MOTD-Update-Funktion**
+        return response
 
     return render(request, "afctrack/start_fleet.html", {
         "doctrines": doctrines,
         "fleet_types": fleet_types,
         "comms_options": comms_options,
     })
-
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(request, token):
