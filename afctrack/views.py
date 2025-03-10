@@ -283,7 +283,7 @@ def start_fleet(request):
 @token_required(scopes=['esi-fleets.read_fleet.v1'])
 def create_esi_fleet(request, token):
     """
-    Creates an ESI FAT link and redirects to the AFAT callback function.
+    Creates an ESI FAT link and immediately updates the MOTD after creation.
     """
 
     fatlink_hash = get_hash_on_save()
@@ -293,8 +293,19 @@ def create_esi_fleet(request, token):
     request.session["fatlink_form__doctrine"] = "Fleet Doctrine"
     request.session["fatlink_form__type"] = "Fleet Type"
 
-    # Redirect instead of directly calling the function
-    return HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
+    # Call AFAT to create the fleet link
+    response = HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
+
+    # Now, wait for the fleet to be registered before continuing
+    fatlink = FatLink.objects.filter(hash=fatlink_hash, is_registered_on_esi=True).first()
+
+    if fatlink:
+        # Fleet is now created, call `update_fleet_motd` immediately
+        return update_fleet_motd(request, token)
+
+    # If the fleet is not registered, return an error or retry logic
+    messages.error(request, "❌ Fleet creation failed. Try again.")
+    return redirect("afctrack:start_fleet")
 
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
