@@ -14,6 +14,7 @@ from esi.decorators import token_required
 from fittings.models import Doctrine
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS, DEFAULT_BUDGET,FLEET_TYPES, COMMS_OPTIONS
+from afat.views.fatlinks.py import create_esi_fatlink_callback
 
 logger = logging.getLogger(__name__)  # ✅ Logging setup
 
@@ -263,6 +264,12 @@ def start_fleet(request):
         request.session['comms'] = comms
 
         # Redirect to the update_fleet_motd view
+        try:
+            return HttpResponseRedirect(reverse('afctrack:update_fleet_motd'))
+        except Exception as e:
+            logger.exception(f"❌ Error redirecting to update_fleet_motd: {e}")
+            messages.error(request, "❌ Error redirecting to update_fleet_motd")
+
         return HttpResponseRedirect(reverse('afctrack:update_fleet_motd'))
 
     return render(request, "afctrack/start_fleet.html", {
