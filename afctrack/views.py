@@ -19,12 +19,12 @@ from esi.clients import esi_client_factory
 from esi.decorators import token_required
 from fittings.models import Doctrine
 from esi.models import Token
-from afat.views.fatlinks import create_esi_fatlink_callback
-from afat.models import get_hash_on_save
-from esi.models import Token
 from esi.decorators import token_required
 from afat.views.fatlinks import create_esi_fatlink_callback
 from afat.models import get_hash_on_save
+from django.shortcuts import redirect
+from django.urls import reverse
+from esi.clients import esi_client_factory
 
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS
@@ -220,16 +220,16 @@ def start_fleet(request):
         request.session["fatlink_form__name"] = fleet_name
         request.session["fatlink_form__doctrine"] = doctrine_name
         request.session["fatlink_form__type"] = fleet_type
+        request.session["fatlink_hash"] = fatlink_hash  # Wichtiger Schritt!
 
-        # 3️⃣ **Hole das ESI-Token des Fleet-Bosses**
+        # 3️⃣ **Prüfe, ob ein ESI-Token existiert**
         esi_token = Token.objects.filter(
             character_id=request.user.profile.main_character.character_id
         ).order_by('-created').first()
 
         if not esi_token:
-            logger.error(f"❌ Kein ESI-Token für {request.user} gefunden! Umleitung zur ESI-Authentifizierung...")
-            messages.error(request, "❌ Fehler: Kein gültiges ESI-Token gefunden. Bitte reloggen!")
-            return redirect("esi:login")  # Umleitung zum ESI-Login
+            logger.warning(f"⚠️ Kein gültiges ESI-Token für {request.user} gefunden, Weiterleitung zum ESI-Login...")
+            return redirect(reverse("esi:login"))  # Umleitung zum ESI-Auth
 
         # 4️⃣ **FAT-Link über `create_esi_fatlink_callback` registrieren**
         try:
