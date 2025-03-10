@@ -21,7 +21,7 @@ from esi.decorators import token_required
 from afat.models import get_hash_on_save
 from esi.models import Token
 from celery import shared_task
-from .tasks import delayed_update_fleet_motd
+from .tasks import delayed_updated_fleet_motd
 
 logger = logging.getLogger(__name__)  # ✅ Logging setup
 
@@ -301,7 +301,7 @@ def create_esi_fleet(request, token):
     response = HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
 
     # Starte Celery-Task mit Wartezeit
-    delayed_update_fleet_motd.apply_async(args=[request.session], countdown=20)
+    delayed_updated_fleet_motd.apply_async(args=[request.session], countdown=20)
 
     return response
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
