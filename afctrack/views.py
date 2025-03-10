@@ -200,36 +200,47 @@ def start_fleet(request):
                 "comms_options": comms_options,
             })
 
-        # 🛠 **1. Setze Session-Daten für AFAT**
+        logger.info(f"📡 Starte ESI FAT-Link Erstellung für Fleet '{fleet_name}' durch {request.user}")
+
+        # 1️⃣ **Session-Daten setzen**
         request.session["fatlink_form__name"] = fleet_name
         request.session["fatlink_form__doctrine"] = doctrine_name
         request.session["fatlink_form__type"] = fleet_type
 
-        # 🛠 **2. Rufe die AFAT-Funktion `create_esi_fatlink()` auf**
+        # 2️⃣ **AFAT-Funktion aufrufen**
         response = create_esi_fatlink(request)
 
-        # 🛠 **3. Hole das letzte erstellte FatLink-Objekt**
-        fatlink = FatLink.objects.filter(
-            creator=request.user, fleet=fleet_name
-        ).order_by('-created').first()
+        # 3️⃣ **DB kurz warten lassen, falls ESI verzögert ist**
+        time.sleep(2)  # ⏳ Wartezeit, um die DB-Synchronisation zu ermöglichen
 
-        if not fatlink or not fatlink.esi_fleet_id:
+        # 4️⃣ **`FatLink`-Objekt suchen**
+        fatlink = FatLink.objects.filter(creator=request.user, fleet=fleet_name).order_by('-created').first()
+
+        if not fatlink:
+            logger.error("❌ Fehler: FatLink wurde nicht erstellt!")
+            messages.error(request, "❌ Fehler: FatLink wurde nicht erstellt.")
+            return redirect("afctrack:start_fleet")
+
+        if not fatlink.esi_fleet_id:
+            logger.error(f"❌ Fehler: Keine ESI Fleet ID erhalten! FatLink-Daten: {fatlink}")
             messages.error(request, "❌ Fehler: Keine gültige ESI Fleet ID erhalten.")
             return redirect("afctrack:start_fleet")
 
-        # 🛠 **4. Erstelle einen FAT-Eintrag für den Flottenleiter**
+        logger.info(f"✅ ESI FAT-Link erstellt: {fatlink.hash} | Fleet-ID: {fatlink.esi_fleet_id}")
+
+        # 5️⃣ **FAT-Eintrag für den FC erstellen**
         try:
             Fat.objects.create(
                 fatlink=fatlink,
-                character=request.user.profile.main_character,  # FC wird als Teilnehmer erfasst
-                system="Unbekannt",  # Falls du den aktuellen System-Namen brauchst, kannst du ihn per ESI abrufen
-                shiptype="Unbekannt"  # Falls du den aktuellen Ship-Type brauchst, ebenfalls per ESI abrufbar
+                character=request.user.profile.main_character,
+                system="Unbekannt",
+                shiptype="Unbekannt"
             )
             logger.info(f"✅ FAT für {request.user} erstellt in Fleet: {fleet_name}")
         except Exception as e:
             logger.error(f"❌ Fehler beim Erstellen des FAT-Eintrags: {e}")
 
-        # 🚀 **5. Weiter zur MOTD-Update-Funktion**
+        # 6️⃣ **Weiter zur MOTD-Update-Funktion**
         return response
 
     return render(request, "afctrack/start_fleet.html", {

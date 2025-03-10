@@ -18,6 +18,7 @@ class General(models.Model):
 POINTS = {
     'Peacetime': 0.5,
     'Strat OP': 1,
+    'CTA': 1,
     'Hive': 1.5
 }
 
