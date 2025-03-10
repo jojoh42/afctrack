@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
                 ),
             ],
             options={
-                "permissions": (("basic_access", "Can access this app"),),
+                "permissions": (("basic_access", "Can access this app"), ("full_access", "Can access all features")),
                 "managed": False,
                 "default_permissions": (),
             },
