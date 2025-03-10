@@ -293,10 +293,9 @@ def create_esi_fleet(request, token):
     fatlink_hash = get_hash_on_save()
 
     # ✅ Speichere Werte explizit in der Session
-    request.session["fatlink_form__name"] = request.session.get("fleet_boss", start_fleet.fleet_boss)
-    request.session["fatlink_form__doctrine"] = request.session.get("doctrine_name", start_fleet.doctrine_name)
-    request.session["fatlink_form__type"] = request.session.get("fleet_type", start_fleet.fleet_type)
-    request.session["comms"] = request.session.get("comms", start_fleet.comms)
+    request.session["fatlink_form__name"] = request.session.get("fleet_boss", "Default Name")
+    request.session["fatlink_form__doctrine"] = request.session.get("doctrine_name", "Default Doctrine")
+    request.session["fatlink_form__type"] = request.session.get("fleet_type", "Default Type")
     
     request.session.save()  # 🔥 WICHTIG: Session-Änderungen speichern
 
