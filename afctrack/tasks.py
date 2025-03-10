@@ -8,25 +8,25 @@ logger = logging.getLogger(__name__)
 @shared_task
 def delayed_updated_fleet_motd(session_data):
     """Updates the MOTD for the fleet after a delay."""
-    
+    import logging
+    logger = logging.getLogger(__name__)
+
     logger.warning("🚀 Celery-Task gestartet mit Daten: %s", session_data)
-    
-    time.sleep(20)
-    
+
+    time.sleep(5)  # Kürzere Wartezeit zum Testen
+
+    from django.contrib.auth.models import AnonymousUser
     from afctrack.views import update_fleet_motd
 
-    # Simuliere eine Django Request-Session
     class DummyRequest:
-        def __init__(self, session_data):
-            self.session = SessionStore()
-            self.session.update(session_data)  # Speichert das dict als echte Session
-    
-    request = DummyRequest(session_data)
+        session = session_data
+        user = AnonymousUser()  # Fake-User hinzufügen
 
-    logger.warning("🚀 Aufruf von update_fleet_motd")
+    logger.warning("🚀 Aufruf von update_fleet_motd mit DummyRequest")
 
-    result = update_fleet_motd(request, None)  # Token ist None, weil Celery es nicht kennt
+    result = update_fleet_motd(DummyRequest(), None)  # Token bleibt None
 
     logger.warning("✅ update_fleet_motd abgeschlossen mit Result: %s", result)
 
     return result
+
