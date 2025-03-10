@@ -281,14 +281,20 @@ def start_fleet(request):
         "comms_options": comms_options,
     })
 @token_required(scopes=['esi-fleets.read_fleet.v1'])
-def create_esi_fleet(request,token):
+def create_esi_fleet(request, token):
+    """
+    Creates an ESI FAT link and redirects to the AFAT callback function.
+    """
 
     fatlink_hash = get_hash_on_save()
 
+    # Store fleet info in session
     request.session["fatlink_form__name"] = "Fleet Name"
     request.session["fatlink_form__doctrine"] = "Fleet Doctrine"
     request.session["fatlink_form__type"] = "Fleet Type"
-    return create_esi_fatlink_callback(request, token, fatlink_hash)
+
+    # Redirect instead of directly calling the function
+    return HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", fatlink_hash=fatlink_hash))
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(request, token):
