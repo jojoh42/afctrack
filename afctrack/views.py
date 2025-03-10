@@ -223,12 +223,12 @@ def update_fleet_motd(request, token):
     comms = request.session.get('comms')
 
     if not all([fleet_boss, doctrine_name, fleet_type, comms]):
-        return JsonResponse({"status": "error", "message": "Missing fleet data in session"}, status=400)
+        messages.error(request, "❌ Missing fleet data in session")
 
     fatlink = FatLink.objects.filter(is_registered_on_esi=True).order_by('-created').first()
     if not fatlink:
         logger.warning("❌ Keine aktive Flotte (FatLink) gefunden.")
-        return JsonResponse({"status": "error", "message": "Keine aktive Flotte gefunden"}, status=400)
+        messages.error(request, "❌ Keine aktive Flotte gefunden")
 
     fleet_id = fatlink.esi_fleet_id
 
@@ -239,15 +239,16 @@ def update_fleet_motd(request, token):
         doctrine_link = f"http://127.0.0.1:8000/fittings/doctrine/{doctrine_obj.id}"
     except Doctrine.DoesNotExist:
         logger.warning(f"⚠️ Doktrin '{doctrine_name}' existiert nicht. Standard-Link wird verwendet.")
+        messages.warning(request, f"⚠️ Doktrin '{doctrine_name}' existiert nicht. Standard-Link wird verwendet.")
 
     # MOTD erstellen
-    motd = f"""<br>
-            <font size="14" color="#ffff0000">Staging:</font><font size="14" color="#bfffffff"></font><font size="14" color="#ffd98d00"><loc><a href="showinfo:35834//1034323745897">P-ZMZV</a></loc></font><br>
-            <font size="14" color="#bfffffff">FC: </font><font size="14" color="#ffd98d00">{fleet_boss}</font><br>
-            <font size="14" color="#ff00ff00">Doctrine Link:</font><font size="14" color="#bfffffff"> </font><font size="14" color="#ffffe400"><a href="{doctrine_link}">{doctrine_name}</a></font><br>
-            <font size="14" color="#ff00ff00">Comms:</font><font size="14" color="#bfffffff"> </font><font size="14" color="#ffffe400"><a href="{comms}">{comms}</a></font><br>
-            <font size="13" color="#bfffffff">Boost Channel:</font><font size="14" color="#bfffffff"> </font><font size="13" color="#ff6868e1"><a href="joinChannel:player_2ec80ee18cbb11eebe4600109bd0f828">IGC Boost</a></font><br>
-            <font size="13" color="#bfffffff">Logi Channel:</font><font size="14" color="#bfffffff"> </font><font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font><br>
+    motd = f"""
+            <font size="14" color="#ffff0000">Staging:</font><font size="14" color="#bfffffff"></font><font size="14" color="#ffd98d00"><loc><a href="showinfo:35834//1034323745897">P-ZMZV</a></loc></font>
+            <font size="14" color="#bfffffff">FC: </font><font size="14" color="#ffd98d00">{fleet_boss}</font>
+            <font size="14" color="#ff00ff00">Doctrine Link:</font><font size="14" color="#bfffffff"> </font><font size="14" color="#ffffe400"><a href="{doctrine_link}">{doctrine_name}</a></font>
+            <font size="14" color="#ff00ff00">Comms:</font><font size="14" color="#bfffffff"> </font><font size="14" color="#ffffe400"><a href="{comms}">{comms}</a></font>
+            <font size="13" color="#bfffffff">Boost Channel:</font><font size="14" color="#bfffffff"> </font><font size="13" color="#ff6868e1"><a href="joinChannel:player_2ec80ee18cbb11eebe4600109bd0f828">IGC Boost</a></font>
+            <font size="13" color="#bfffffff">Logi Channel:</font><font size="14" color="#bfffffff"> </font><font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font>
             <font size="14" color="#bfffffff"></font>"""
 
     # Set the MOTD via ESI
@@ -255,13 +256,12 @@ def update_fleet_motd(request, token):
         response = esi_client_factory(token=token).Fleets.put_fleets_fleet_id(
             fleet_id=fleet_id, token=token.access_token, new_settings={"motd": motd}
         )
-        api_response = response.result()
         logger.info(f"✅ Flotten-MOTD erfolgreich geändert: {motd}")
-        return JsonResponse({"status": "success", "message": "MOTD erfolgreich gesetzt", "esi_response": api_response}, status=200)
+        messages.success(request, "✅ Flotten-MOTD erfolgreich geändert")
         return HttpResponseRedirect(reverse('afctrack:start_fleet'))
     except Exception as e:
         logger.exception(f"❌ Fehler beim Setzen der neuen MOTD: {e}")
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
+        messages.error(request, f"❌ Fehler beim Setzen der neuen MOTD: {e}")
 
 
 def index(request):
