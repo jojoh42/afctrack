@@ -296,8 +296,7 @@ def create_esi_fleet(request, token):
     request.session["fatlink_form__type"] = "Fleet Type"
 
     # Create FAT link
-    response = HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
-
+    HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
     # Wait for 20 seconds before updating the MOTD
 
     # Find the fleet after waiting
