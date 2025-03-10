@@ -29,7 +29,7 @@ ESI_UPDATE_MOTD_URL = "https://esi.evetech.net/latest/fleets/{fleet_id}/motd/"
 ESI_CHARACTER_FLEET_URL = "https://esi.evetech.net/latest/characters/{character_id}/fleet/"
 
 @login_required
-@permission_required("afctrack.basic_access")
+@permission_required("afctrack.full_access")
 def get_fleet_counts_and_payment(request, budget, selected_month, selected_year):
     print(f"Request user: {request.user}")
     """
@@ -163,8 +163,82 @@ def get_fleet_type_amount(selected_month, selected_year):
         })
     return fleet_data
 
+def index(request):
+    current_month = datetime.now().month
+    current_year = datetime.now().year
+
+    selected_month = int(request.GET.get('month', current_month))
+    selected_year = int(request.GET.get('year', current_year))
+
+    available_months = list(range(1, 13))  
+    available_years = list(range(current_year - 5, current_year + 1))
+
+    budget = int(request.GET.get('budget', 3000000000))
+
+    player_payments = get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
+
+    context = {
+        'month_name': calendar.month_name[selected_month],
+        'available_months': available_months,
+        'available_years': available_years,
+        'player_payments': player_payments,
+        'budget': budget,
+        'selected_month': selected_month,
+        'selected_year': selected_year,
+    }
+
+    return render(request, 'afctrack/index.html', context)
+
+
+def doctrine_amount(request):
+    current_month = datetime.now().month
+    current_year = datetime.now().year
+
+    selected_month = int(request.GET.get('month', current_month))
+    selected_year = int(request.GET.get('year', current_year))
+
+    available_months = list(range(1, 13))  
+    available_years = list(range(current_year - 5, current_year + 1))
+
+    doctrine_counts = get_doctrine_counts(selected_month, selected_year)
+
+    context = {
+        'month_name': calendar.month_name[selected_month],
+        'available_months': available_months,
+        'available_years': available_years,
+        'doctrine_counts': doctrine_counts,
+        'selected_month': selected_month,
+        'selected_year': selected_year,
+    }
+
+    return render(request, "afctrack/doctrine_amount.html", context)
+
+
+def fleet_type_amount(request):
+    current_month = datetime.now().month
+    current_year = datetime.now().year
+
+    selected_month = int(request.GET.get('month', current_month))
+    selected_year = int(request.GET.get('year', current_year))
+
+    available_months = list(range(1, 13))  
+    available_years = list(range(current_year - 5, current_year + 1))
+
+    fleet_data = get_fleet_type_amount(selected_month, selected_year)
+
+    context = {
+        'month_name': calendar.month_name[selected_month],
+        'available_months': available_months,
+        'available_years': available_years,
+        'fleet_type_counts': fleet_data,
+        'selected_month': selected_month,
+        'selected_year': selected_year,
+    }
+
+    return render(request, "afctrack/fleet_type_amount.html", context)
+
 @login_required
-@permission_required("afctrack.motd_access")
+@permission_required("afctrack.basic_access")
 def start_fleet(request):
     """Handles the fleet creation form and updates the MOTD after submission."""
     
@@ -265,78 +339,3 @@ def update_fleet_motd(request, token):
         logger.exception(f"❌ Fehler beim Setzen der neuen MOTD: {e}")
         messages.error(request, f"❌ Fehler beim Setzen der neuen MOTD: {e}")
         return HttpResponseRedirect(reverse('afctrack:start_fleet'))
-
-
-def index(request):
-    current_month = datetime.now().month
-    current_year = datetime.now().year
-
-    selected_month = int(request.GET.get('month', current_month))
-    selected_year = int(request.GET.get('year', current_year))
-
-    available_months = list(range(1, 13))  
-    available_years = list(range(current_year - 5, current_year + 1))
-
-    budget = int(request.GET.get('budget', 3000000000))
-
-    player_payments = get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
-
-    context = {
-        'month_name': calendar.month_name[selected_month],
-        'available_months': available_months,
-        'available_years': available_years,
-        'player_payments': player_payments,
-        'budget': budget,
-        'selected_month': selected_month,
-        'selected_year': selected_year,
-    }
-
-    return render(request, 'afctrack/index.html', context)
-
-
-def doctrine_amount(request):
-    current_month = datetime.now().month
-    current_year = datetime.now().year
-
-    selected_month = int(request.GET.get('month', current_month))
-    selected_year = int(request.GET.get('year', current_year))
-
-    available_months = list(range(1, 13))  
-    available_years = list(range(current_year - 5, current_year + 1))
-
-    doctrine_counts = get_doctrine_counts(selected_month, selected_year)
-
-    context = {
-        'month_name': calendar.month_name[selected_month],
-        'available_months': available_months,
-        'available_years': available_years,
-        'doctrine_counts': doctrine_counts,
-        'selected_month': selected_month,
-        'selected_year': selected_year,
-    }
-
-    return render(request, "afctrack/doctrine_amount.html", context)
-
-
-def fleet_type_amount(request):
-    current_month = datetime.now().month
-    current_year = datetime.now().year
-
-    selected_month = int(request.GET.get('month', current_month))
-    selected_year = int(request.GET.get('year', current_year))
-
-    available_months = list(range(1, 13))  
-    available_years = list(range(current_year - 5, current_year + 1))
-
-    fleet_data = get_fleet_type_amount(selected_month, selected_year)
-
-    context = {
-        'month_name': calendar.month_name[selected_month],
-        'available_months': available_months,
-        'available_years': available_years,
-        'fleet_type_counts': fleet_data,
-        'selected_month': selected_month,
-        'selected_year': selected_year,
-    }
-
-    return render(request, "afctrack/fleet_type_amount.html", context)

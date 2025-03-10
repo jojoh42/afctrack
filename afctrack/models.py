@@ -9,10 +9,10 @@ class General(models.Model):
         
         # This model is not intended to be managed by Django (e.g., not to be migrated)
         managed = False
-        default_permissions = ()
+        default_permissions = ()  # No default permissions
         permissions = (
-            ("basic_access", "Can access this app"),
-            ("motd_access", "Can create an MOTD"),
+            ("basic_access", "can create an MOTD"),
+            ("full_access", "Can View Fleet Stats"),
         )
 
 # Doctrine points
