@@ -18,6 +18,10 @@ from afat.views.fatlinks import create_esi_fatlink, add_fatlink  # Verwende AFAT
 from esi.clients import esi_client_factory
 from esi.decorators import token_required
 from fittings.models import Doctrine
+from esi.models import Token
+from afat.views.fatlinks import create_esi_fatlink_callback
+from afat.models import get_hash_on_save
+
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS
 from .models import FittingsDoctrine
@@ -201,51 +205,40 @@ def start_fleet(request):
                 "comms_options": comms_options,
             })
 
-        logger.info(f"📡 Erstelle FAT-Link für Fleet '{fleet_name}' durch {request.user}")
+        logger.info(f"📡 Starte ESI FAT-Link Registrierung für Fleet '{fleet_name}' durch {request.user}")
 
-        # 1️⃣ **FAT-Link direkt erstellen**
+        # 1️⃣ **Erstelle einen eindeutigen FAT-Link Hash**
+        fatlink_hash = get_hash_on_save()
+
+        # 2️⃣ **Session-Daten setzen**
+        request.session["fatlink_form__name"] = fleet_name
+        request.session["fatlink_form__doctrine"] = doctrine_name
+        request.session["fatlink_form__type"] = fleet_type
+
+        # 3️⃣ **Hole das ESI-Token des Fleet-Bosses**
         try:
-            request.POST = {
-                "fleet_name": fleet_name,
-                "fleet_type": fleet_type,
-                "doctrine": doctrine_name
-            }
-            add_fatlink(request)
+            esi_token = Token.objects.get(character_id=request.user.profile.main_character.character_id)
+        except Token.DoesNotExist:
+            logger.error(f"❌ Kein ESI-Token für {request.user} gefunden!")
+            messages.error(request, "❌ Fehler: Kein gültiges ESI-Token gefunden. Bitte reloggen!")
+            return redirect("afctrack:start_fleet")
+
+        # 4️⃣ **FAT-Link über `create_esi_fatlink_callback` registrieren**
+        try:
+            response = create_esi_fatlink_callback(request, esi_token, fatlink_hash)
+            logger.info(f"✅ ESI FAT-Link erfolgreich erstellt für Fleet '{fleet_name}' mit Hash {fatlink_hash}")
         except Exception as e:
-            logger.error(f"❌ Fehler beim Erstellen des FAT-Links für Fleet '{fleet_name}': {e}")
-            messages.error(request, f"❌ Fehler: FAT-Link konnte nicht erstellt werden. Details: {str(e)}")
+            logger.error(f"❌ Fehler bei `create_esi_fatlink_callback`: {e}", exc_info=True)
+            messages.error(request, f"❌ Fehler: FAT-Link konnte nicht über ESI erstellt werden. Details: {str(e)}")
             return redirect("afctrack:start_fleet")
 
-        # 2️⃣ **DB kurz warten lassen, falls ESI verzögert ist**
-        time.sleep(2)  
-
-        # 3️⃣ **Suche den erstellten FAT-Link**
-        fatlink = FatLink.objects.filter(creator=request.user, fleet=fleet_name).order_by('-created').first()
-
-        if not fatlink:
-            logger.error(f"❌ Fehler: FAT-Link wurde nicht gefunden für Fleet '{fleet_name}'! Mögliche Gründe:")
-            logger.error("👉 Fehler in der API oder fehlende Berechtigungen.")
-            logger.error("👉 ESI-Antwort war möglicherweise fehlerhaft oder verzögert.")
-            logger.error(f"👉 Gespeicherte Daten: Fleet-Name='{fleet_name}', Doctrine='{doctrine_name}', Type='{fleet_type}'")
-
-            messages.error(request, "❌ Fehler: FAT-Link wurde nicht gefunden. Sieh in die Logs für mehr Infos.")
-            return redirect("afctrack:start_fleet")
-
-        logger.info(f"✅ FAT-Link erfolgreich erstellt: {fatlink.hash}")
-
-        # 4️⃣ **ESI FAT-Link registrieren**
-        response = create_esi_fatlink(request)
-
-        # 5️⃣ **Weiter zur MOTD-Update-Funktion**
-        return response
+        return response  # Weiterleitung basierend auf `create_esi_fatlink_callback`
 
     return render(request, "afctrack/start_fleet.html", {
         "doctrines": doctrines,
         "fleet_types": fleet_types,
         "comms_options": comms_options,
     })
-
-
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(request, token):
