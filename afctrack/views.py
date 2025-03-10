@@ -292,15 +292,23 @@ def create_esi_fleet(request, token):
     """
     fatlink_hash = get_hash_on_save()
 
-    # 🚀 Speichere nur wichtige Daten, nicht die gesamte Session
+    # ✅ Speichere Werte explizit in der Session
+    request.session["fatlink_form__name"] = request.session.get("fleet_boss", start_fleet.fleet_boss)
+    request.session["fatlink_form__doctrine"] = request.session.get("doctrine_name", start_fleet.doctrine_name)
+    request.session["fatlink_form__type"] = request.session.get("fleet_type", start_fleet.fleet_type)
+    request.session["comms"] = request.session.get("comms", start_fleet.comms)
+    
+    request.session.save()  # 🔥 WICHTIG: Session-Änderungen speichern
+
+    # Speichere nur relevante Daten für Celery
     session_data = {
-        "fleet_boss": request.session.get("fleet_boss"),
-        "doctrine_name": request.session.get("doctrine_name"),
-        "fleet_type": request.session.get("fleet_type"),
-        "comms": request.session.get("comms"),
+        "fleet_boss": request.session["fatlink_form__name"],
+        "doctrine_name": request.session["fatlink_form__doctrine"],
+        "fleet_type": request.session["fatlink_form__type"],
+        "comms": request.session.get("comms", "No Comms"),
     }
 
-    # ✅ Starte Celery Task mit **nur** den relevanten Daten
+    # ✅ Starte Celery Task
     delayed_updated_fleet_motd.apply_async(args=[session_data], countdown=20)
 
     # Redirect zur FATLink-Erstellung
