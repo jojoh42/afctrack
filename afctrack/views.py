@@ -19,7 +19,7 @@ from afat.views.fatlinks import create_esi_fatlink, add_fatlink  # Verwende AFAT
 from esi.clients import esi_client_factory
 from esi.decorators import token_required
 from fittings.models import Doctrine
-from esi.models import Token
+from esi.models import Token, CallbackRedireckt
 from esi.decorators import token_required
 from afat.views.fatlinks import *
 from afat.models import *
@@ -220,13 +220,14 @@ def start_fleet(request, token):
         request.session['fleet_type'] = fleet_type
         request.session['comms'] = comms
 
-        # Automatically create FAT link
         try:
-            # Get the fleet information from the session
+            # Retrieve fleet boss character information from the database
             fleet_boss_character = EveCharacter.objects.get(character_name=fleet_boss)
-            # Create the FAT Link
+
+            # Generate a unique hash for the FAT link
             fatlink_hash = get_hash_on_save()
 
+            # Create a new FAT link
             new_fatlink = FatLink(
                 created=timezone.now(),
                 fleet=fleet_name,
@@ -234,14 +235,14 @@ def start_fleet(request, token):
                 creator=request.user,
                 character=fleet_boss_character,
                 is_esilink=True,
-                is_registered_on_esi=True,  # Assuming this is an ESI link
+                is_registered_on_esi=True,  # Set to True if using ESI
                 fleet_type=fleet_type,
                 doctrine=doctrine_name,
             )
             new_fatlink.save()
 
-            # Set the default duration of the FAT link (e.g., 60 minutes)
-            duration = Duration(fleet=new_fatlink, duration=60)  # 60 minutes as default
+            # Set the default duration for the FAT link (e.g., 60 minutes)
+            duration = Duration(fleet=new_fatlink, duration=60)  # 60 minutes by default
             duration.save()
 
             # Log the creation of the FAT link
@@ -252,6 +253,7 @@ def start_fleet(request, token):
                 fatlink_hash=fatlink_hash,
             )
 
+            # Log success message
             messages.success(request, "✅ FAT-Link erfolgreich erstellt für die Flotte!")
 
         except Exception as e:
@@ -266,7 +268,6 @@ def start_fleet(request, token):
         "fleet_types": fleet_types,
         "comms_options": comms_options,
     })
-
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(request, token):
