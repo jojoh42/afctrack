@@ -261,7 +261,6 @@ def start_fleet(request):
             return render(request, "afctrack/start_fleet.html", {
                 "doctrines": doctrines,
                 "fleet_types": fleet_types,
-                "fleet_name": fleet_name,
                 "comms_options": comms_options,
             })
 
@@ -283,7 +282,6 @@ def start_fleet(request):
 
     return render(request, "afctrack/start_fleet.html", {
         "doctrines": doctrines,
-        "fleet_name": fleet_name,
         "fleet_types": fleet_types,
         "comms_options": comms_options,
     })
@@ -300,7 +298,6 @@ def create_esi_fleet(request, token):
     request.session["fatlink_form__doctrine"] = request.session.get("doctrine_name", "Default Doctrine")
     request.session["fatlink_form__type"] = request.session.get("fleet_type", "Default Type")
     request.session["comms"] = request.session.get("comms", "No Comms") 
-    request.session["fleet_name"] = request.session.get("fleet_name", "No Name")
     
     request.session.save()  # 🔥 WICHTIG: Session-Änderungen speichern
 
@@ -310,7 +307,6 @@ def create_esi_fleet(request, token):
         "doctrine_name": request.session["fatlink_form__doctrine"],
         "fleet_type": request.session["fatlink_form__type"],
         "comms": request.session.get("comms", "No Comms"),
-        'fleet_name': request.session.get("fleet_name", "No Name"),
     }
 
     # ✅ Starte Celery Task
