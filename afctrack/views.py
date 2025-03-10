@@ -164,7 +164,7 @@ def get_fleet_type_amount(selected_month, selected_year):
     return fleet_data
 
 @login_required
-@permission_required("afctrack.basic_access")
+@permission_required("afctrack.motd_access")
 def start_fleet(request):
     """Handles the fleet creation form and updates the MOTD after submission."""
     
