@@ -2,7 +2,7 @@ import calendar
 import logging
 from datetime import datetime
 from django.contrib.auth.decorators import login_required, permission_required
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.db.models import Count
 from django.contrib import messages
