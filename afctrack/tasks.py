@@ -25,24 +25,30 @@ def example_task():
 @shared_task
 def delayed_updated_fleet_motd(session_data):
     """Updates the MOTD for the fleet after a delay."""
-    
-    logger.info("🎯 Celery-Task gestartet mit Daten: %s", session_data)
+    import logging
+    import sys  # ✅ Um in die Konsole zu schreiben
 
-    # 20-Sekunden-Countdown mit Logging
-    for i in range(20, 0, -1):
-        logger.info(f"⏳ Countdown: {i} Sekunden bis zur MOTD-Aktualisierung...")
-        time.sleep(1)
+    logger = logging.getLogger(__name__)
 
-    logger.info("🚀 Countdown beendet. update_fleet_motd wird nun aufgerufen.")
+    # ✅ Logge Fortschritt in **die Django-Konsole** und nicht nur in Celery
+    print("✅ Celery-Task gestartet mit Daten:", session_data, file=sys.stdout)
+    sys.stdout.flush()
+
+    time.sleep(20)
 
     from afctrack.views import update_fleet_motd
 
-    # Simuliere eine Request-Session für die Funktion
+    print("🚀 Aufruf von update_fleet_motd", file=sys.stdout)
+    sys.stdout.flush()
+
+    # 🛠 Erstelle DummyRequest für Django-View
     class DummyRequest:
-        session = session_data
+        session = session_data  # Simulierter Request
 
     result = update_fleet_motd(DummyRequest(), None)
 
-    logger.info("✅ update_fleet_motd abgeschlossen mit Result: %s", result)
+    print("✅ update_fleet_motd abgeschlossen mit Result:", result, file=sys.stdout)
+    sys.stdout.flush()
 
     return result
+
