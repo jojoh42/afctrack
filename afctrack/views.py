@@ -1,9 +1,8 @@
 import calendar
 import logging
-import time
 from datetime import datetime
 from django.contrib.auth.decorators import login_required, permission_required
-from django.shortcuts import render, redirect
+from django.shortcuts import render
 from django.contrib.auth.models import User
 from django.db.models import Count
 from django.contrib import messages
@@ -15,13 +14,6 @@ from esi.decorators import token_required
 from fittings.models import Doctrine
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS, DEFAULT_BUDGET,FLEET_TYPES, COMMS_OPTIONS
-from afat.views.fatlinks import create_esi_fatlink_callback
-
-from esi.decorators import token_required
-from afat.models import get_hash_on_save
-from esi.models import Token
-from celery import shared_task
-from .tasks import delayed_updated_fleet_motd
 
 logger = logging.getLogger(__name__)  # ✅ Logging setup
 
@@ -268,16 +260,9 @@ def start_fleet(request):
         request.session['fleet_boss'] = fleet_boss
         request.session['doctrine_name'] = doctrine_name
         request.session['fleet_type'] = fleet_type
-        request.session['fleet_name'] = fleet_name
         request.session['comms'] = comms
 
         # Redirect to the update_fleet_motd view
-        try:
-            return HttpResponseRedirect(reverse('afctrack:create_esi_fleet'))
-        except Exception as e:
-            logger.exception(f"❌ Error redirecting to update_fleet_motd: {e}")
-            messages.error(request, "❌ Error redirecting to update_fleet_motd")
-
         return HttpResponseRedirect(reverse('afctrack:update_fleet_motd'))
 
     return render(request, "afctrack/start_fleet.html", {
@@ -285,36 +270,6 @@ def start_fleet(request):
         "fleet_types": fleet_types,
         "comms_options": comms_options,
     })
-
-@token_required(scopes=['esi-fleets.read_fleet.v1'])
-def create_esi_fleet(request, token):
-    """
-    Creates an ESI FAT link and redirects to the AFAT callback function.
-    """
-    fatlink_hash = get_hash_on_save()
-
-    # ✅ Speichere Werte explizit in der Session
-    request.session["fatlink_form__name"] = request.session.get("fleet_boss", "Default Name")
-    request.session["fatlink_form__doctrine"] = request.session.get("doctrine_name", "Default Doctrine")
-    request.session["fatlink_form__type"] = request.session.get("fleet_type", "Default Type")
-    request.session["comms"] = request.session.get("comms", "No Comms") 
-    
-    request.session.save()  # 🔥 WICHTIG: Session-Änderungen speichern
-
-    # Speichere nur relevante Daten für Celery
-    session_data = {
-        "fleet_boss": request.session["fatlink_form__name"],
-        "doctrine_name": request.session["fatlink_form__doctrine"],
-        "fleet_type": request.session["fatlink_form__type"],
-        "comms": request.session.get("comms", "No Comms"),
-    }
-
-    # ✅ Starte Celery Task
-    delayed_updated_fleet_motd.apply_async(args=[session_data], countdown=20)
-
-    # Redirect zur FATLink-Erstellung
-    return HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
-
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(request, token):
