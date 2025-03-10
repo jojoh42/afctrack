@@ -294,7 +294,8 @@ def create_esi_fleet(request, token):
     request.session["fatlink_form__type"] = "Fleet Type"
 
     # Redirect instead of directly calling the function
-    return HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", fatlink_hash=fatlink_hash))
+    return HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
+
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(request, token):
