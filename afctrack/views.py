@@ -285,14 +285,8 @@ def start_fleet(request):
 @token_required(scopes=['esi-fleets.read_fleet.v1'])
 def create_esi_fleet(request, token):
     """
-    Creates an ESI FAT link and waits for registration before updating MOTD.
+    Creates an ESI FAT link, waits 20 seconds, and then updates the MOTD.
     """
-
-    # Ensure the user has a valid token for ESI fleet creation
-    esi_token = Token.get_token(character_id=token.character_id, scopes=["esi-fleets.read_fleet.v1"])
-    if not esi_token:
-        messages.error(request, "❌ No valid ESI token found. Please re-authenticate.")
-        return redirect("esi:login")  # Redirect to ESI auth page
 
     fatlink_hash = get_hash_on_save()
 
@@ -301,20 +295,19 @@ def create_esi_fleet(request, token):
     request.session["fatlink_form__doctrine"] = "Fleet Doctrine"
     request.session["fatlink_form__type"] = "Fleet Type"
 
-    # Redirect to AFAT fleet creation callback
-    HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
+    # Create FAT link
+    response = HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
 
-    # Wait for fleet registration to complete
-    fatlink = None
-    for _ in range(5):  # Retry 5 times (10 sec total)
-        fatlink = FatLink.objects.filter(hash=fatlink_hash, is_registered_on_esi=True).first()
-        if fatlink:
-            break
-        time.sleep(2)  # Wait before retrying
+    # Wait for 20 seconds before updating the MOTD
+    time.sleep(20)
 
+    # Find the fleet after waiting
+    fatlink = FatLink.objects.filter(hash=fatlink_hash, is_registered_on_esi=True).first()
+    
     if fatlink:
         return update_fleet_motd(request, token)
 
+    # If fleet not found, show an error
     messages.error(request, "❌ Fleet creation took too long. Try again.")
     return redirect("afctrack:start_fleet")
 
