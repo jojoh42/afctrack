@@ -17,7 +17,7 @@ from esi.clients import esi_client_factory
 from esi.decorators import token_required
 from fittings.models import Doctrine
 from .models import POINTS
-from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS
+from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS, DEFAULT_BUDGET,FLEET_TYPES, COMMS_OPTIONS
 from .models import FittingsDoctrine
 
 logger = logging.getLogger(__name__)  # ✅ Logging setup
@@ -173,7 +173,7 @@ def index(request):
     available_months = list(range(1, 13))  
     available_years = list(range(current_year - 5, current_year + 1))
 
-    budget = int(request.GET.get('budget', 3000000000))
+    budget = int(request.GET.get('budget', DEFAULT_BUDGET))
 
     player_payments = get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
 
@@ -243,18 +243,8 @@ def start_fleet(request):
     """Handles the fleet creation form and updates the MOTD after submission."""
     
     doctrines = Doctrine.objects.all()
-    fleet_types = ["Peacetime", "StratOP", "Mining", "Hive", "CTA"]
-    comms_options = [
-        {"name": "Capital OP", "url": "https://tinyurl.com/ywwp85u9"},
-        {"name": "OP1-Stratergic", "url": "https://tinyurl.com/IGCOP1"},
-        {"name": "OP2-Home Defense", "url": "https://tinyurl.com/IGCOP2"},
-        {"name": "OP3-CTA", "url": "https://tinyurl.com/3m64n62p"},
-        {"name": "OP4-Moon Event", "url": "https://tinyurl.com/mrh6436r"},
-        {"name": "OP5-ICE Event", "url": "https://tinyurl.com/mr5sspda"},
-        {"name": "OP6 - Peacetime", "url": "https://tinyurl.com/ymusr8k9"},
-        {"name": "OP7 - Peacetime", "url": "https://tinyurl.com/bp7r58ep"},
-        {"name": "OP8 - Peacetime", "url": "https://tinyurl.com/2dbcwwcu"}
-    ]
+    fleet_types = FLEET_TYPES
+    comms_options = COMMS_OPTIONS
 
     if request.method == "POST":
         fleet_boss = request.POST.get("fleet_boss")

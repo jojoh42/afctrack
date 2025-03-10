@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from .app_settings import POINTS
 
 class General(models.Model):
     """Meta model for app permissions"""
@@ -16,12 +17,7 @@ class General(models.Model):
         )
 
 # Doctrine points
-POINTS = {
-    'Peacetime': 0.5,
-    'Strat OP': 1,
-    'CTA': 1,
-    'Hive': 1.5
-}
+POINTS = POINTS
 
 def get_current_month_and_year():
     """
