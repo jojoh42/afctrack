@@ -164,17 +164,23 @@ def get_fleet_type_amount(selected_month, selected_year):
 
     return fleet_data
 
+logger = logging.getLogger(__name__)
+
 def start_fleet(request):
-    """Handles the fleet creation form and updates the MOTD after submission."""
-    
+    """Startet eine neue Flotte und registriert sie zuerst über FatLink (ESI Tracker von afat)."""
+
     doctrines = Doctrine.objects.all()
     fleet_types = ["Peacetime", "StratOP", "Mining", "Hive"]
     comms_options = [
-        {"name": "OP1", "url": "https://shorturl.at/Kg2ka"},
-        {"name": "OP2", "url": "https://shorturl.at/Kg2ka"},
-        {"name": "OP3", "url": "https://shorturl.at/Kg2ka"},
-        {"name": "OP4", "url": "https://shorturl.at/Kg2ka"},
-        {"name": "OP5", "url": "https://shorturl.at/Kg2ka"},
+        {"name": "Capital OP", "url": "https://tinyurl.com/ywwp85u9"},
+        {"name": "OP1-Stratergic", "url": "https://tinyurl.com/IGCOP1"},
+        {"name": "OP2-Home Defense", "url": "https://tinyurl.com/IGCOP2"},
+        {"name": "OP3-CTA", "url": "https://tinyurl.com/3m64n62p"},
+        {"name": "OP4-Moon Event", "url": "https://tinyurl.com/mrh6436r"},
+        {"name": "OP5-ICE Event", "url": "https://tinyurl.com/mr5sspda"},
+        {"name": "OP6 - Pacetime", "url": "https://tinyurl.com/ymusr8k9"},
+        {"name": "OP7 - Pacetime", "url": "https://tinyurl.com/bp7r58ep"},
+        {"name": "OP8 - Pacetime", "url": "https://tinyurl.com/2dbcwwcu"}
     ]
 
     if request.method == "POST":
@@ -185,21 +191,45 @@ def start_fleet(request):
         comms = request.POST.get("comms")
 
         if not all([fleet_boss, fleet_name, doctrine_name, fleet_type, comms]):
-            messages.error(request, "❌ All fields must be filled!")
+            messages.error(request, "❌ Alle Felder müssen ausgefüllt sein!")
             return render(request, "afctrack/start_fleet.html", {
                 "doctrines": doctrines,
                 "fleet_types": fleet_types,
                 "comms_options": comms_options,
             })
 
-        # Save data in session
+        # 🛠 **1. Neue Flotte mit `FatLink` in ESI registrieren**
+        try:
+            fat_entry = FatLink.objects.create(
+                creator=request.user,
+                doctrine=doctrine_name,
+                fleet_type=fleet_type,
+                is_registered_on_esi=True  # Falls `FatLink` selbst eine ESI-Registierung übernimmt
+            )
+            if not fat_entry or not fat_entry.esi_fleet_id:
+                raise ValueError("Keine gültige ESI Fleet ID erhalten.")
+
+            esi_fleet_id = fat_entry.esi_fleet_id  # ESI Fleet ID für die Weiterverarbeitung speichern
+            logger.info(f"✅ Fleet erfolgreich über `FatLink` in ESI registriert mit ID: {esi_fleet_id}")
+
+        except Exception as e:
+            logger.exception("❌ Fehler beim Starten der Fleet über `FatLink`")
+            messages.error(request, f"Fehler beim Starten der Fleet über `FatLink`: {e}")
+            return render(request, "afctrack/start_fleet.html", {
+                "doctrines": doctrines,
+                "fleet_types": fleet_types,
+                "comms_options": comms_options,
+            })
+
+        # 🛠 **2. Session-Daten für MOTD setzen**
         request.session['fleet_boss'] = fleet_boss
         request.session['doctrine_name'] = doctrine_name
         request.session['fleet_type'] = fleet_type
         request.session['comms'] = comms
+        request.session['esi_fleet_id'] = esi_fleet_id  # Speichern für MOTD Update
 
-        # Redirect to the update_fleet_motd view
-        return HttpResponseRedirect(reverse('afctrack:update_fleet_motd'))
+        # 🚀 **3. Weiter zur MOTD-Update-Funktion**
+        return redirect(reverse('afctrack:update_fleet_motd'))
 
     return render(request, "afctrack/start_fleet.html", {
         "doctrines": doctrines,
@@ -237,14 +267,14 @@ def update_fleet_motd(request, token):
         logger.warning(f"⚠️ Doktrin '{doctrine_name}' existiert nicht. Standard-Link wird verwendet.")
 
     # MOTD erstellen
-    motd = f""" <br>
-        <font size="14" color="#ffff0000">Staging:</font><font size="14" color="#bfffffff"></font><font size="14" color="#ffd98d00"><loc><a href="showinfo:35834//1034323745897">P-ZMZV</a></loc></font><br>
-        <font size="14" color="#bfffffff">FC: </font><font size="14" color="#ffd98d00">{fleet_boss}</font><br>
-        <font size="14" color="#ff00ff00">Doctrine Link:</font><font size="14" color="#bfffffff"> </font><font size="14" color="#ffffe400"><a href="{doctrine_link}">{doctrine_name}</a></font><br>
-        <font size="14" color="#ff00ff00">Comms:</font><font size="14" color="#bfffffff"> </font><font size="14" color="#ffffe400"><a href="{comms}">{comms}</a></font><br>
-        <font size="13" color="#bfffffff">Boost Channel:</font><font size="14" color="#bfffffff"> </font><font size="13" color="#ff6868e1"><a href="joinChannel:player_2ec80ee18cbb11eebe4600109bd0f828">IGC Boost</a></font><br>
-        <font size="13" color="#bfffffff">Logi Channel:</font><font size="14" color="#bfffffff"> </font><font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font><br>
-        <font size="14" color="#bfffffff"></font>"""
+    motd = f'<br>
+            <font size="14" color="#ffff0000">Staging:</font><font size="14" color="#bfffffff"></font><font size="14" color="#ffd98d00"><loc><a href="showinfo:35834//1034323745897">P-ZMZV</a></loc></font><br>
+            <font size="14" color="#bfffffff">FC: </font><font size="14" color="#ffd98d00">{fleet_boss}</font><br>
+            <font size="14" color="#ff00ff00">Doctrine Link:</font><font size="14" color="#bfffffff"> </font><font size="14" color="#ffffe400"><a href="{doctrine_link}">{doctrine_name}</a></font><br>
+            <font size="14" color="#ff00ff00">Comms:</font><font size="14" color="#bfffffff"> </font><font size="14" color="#ffffe400"><a href="{comms}">{comms}</a></font><br>
+            <font size="13" color="#bfffffff">Boost Channel:</font><font size="14" color="#bfffffff"> </font><font size="13" color="#ff6868e1"><a href="joinChannel:player_2ec80ee18cbb11eebe4600109bd0f828">IGC Boost</a></font><br>
+            <font size="13" color="#bfffffff">Logi Channel:</font><font size="14" color="#bfffffff"> </font><font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font><br>
+            <font size="14" color="#bfffffff"></font>'
 
     # Set the MOTD via ESI
     try:
@@ -253,7 +283,7 @@ def update_fleet_motd(request, token):
         )
         api_response = response.result()
         logger.info(f"✅ Flotten-MOTD erfolgreich geändert: {motd}")
-        return JsonResponse({"status": "success", "message": "MOTD erfolgreich gesetzt", "esi_response": api_response}, status=200)
+        messages.success(request, "✅ MOTD erfolgreich gesetzt")
         return HttpResponseRedirect(reverse('afctrack:start_fleet'))
     except Exception as e:
         logger.exception(f"❌ Fehler beim Setzen der neuen MOTD: {e}")
