@@ -8,7 +8,7 @@ class General(models.Model):
         """Meta definitions"""
         
         # This model is not intended to be managed by Django (e.g., not to be migrated)
-        managed = False
+        managed = True
         default_permissions = ()
         permissions = (
             ("basic_access", "Can access this app"),
