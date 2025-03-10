@@ -16,6 +16,9 @@ from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS, DEFAULT_BUDGET,FLEET_TYPES, COMMS_OPTIONS
 from afat.views.fatlinks import create_esi_fatlink_callback
 
+from esi.decorators import token_required
+from afat.models import get_hash_on_save
+
 logger = logging.getLogger(__name__)  # ✅ Logging setup
 
 
@@ -277,6 +280,15 @@ def start_fleet(request):
         "fleet_types": fleet_types,
         "comms_options": comms_options,
     })
+@token_required(scopes=['esi-fleets.read_fleet.v1'])
+def create_esi_fleet(request,token):
+
+    fatlink_hash = get_hash_on_save()
+
+    request.session["fatlink_form__name"] = "Fleet Name"
+    request.session["fatlink_form__doctrine"] = "Fleet Doctrine"
+    request.session["fatlink_form__type"] = "Fleet Type"
+    return create_esi_fatlink_callback(request, token, fatlink_hash)
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(request, token):
