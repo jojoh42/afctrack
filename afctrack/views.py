@@ -265,7 +265,7 @@ def start_fleet(request):
 
         # Redirect to the update_fleet_motd view
         try:
-            return HttpResponseRedirect(reverse('afctrack:update_fleet_motd'))
+            return HttpResponseRedirect(reverse('afat:fatlinks_create_esi_fatlink_callback'))
         except Exception as e:
             logger.exception(f"❌ Error redirecting to update_fleet_motd: {e}")
             messages.error(request, "❌ Error redirecting to update_fleet_motd")
