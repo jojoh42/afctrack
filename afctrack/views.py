@@ -201,6 +201,7 @@ def start_fleet(request):
         # 🛠 **1. Neue Flotte mit `FatLink` in ESI registrieren**
         try:
             fat_entry = FatLink.objects.create(
+                fleet=fleet_name,
                 creator=request.user,
                 doctrine=doctrine_name,
                 fleet_type=fleet_type,
