@@ -1,7 +1,6 @@
 import calendar
 import requests
 import json
-import time
 import logging
 from datetime import datetime
 from django.contrib.auth.decorators import login_required, permission_required
@@ -13,21 +12,10 @@ from django.shortcuts import redirect
 from django.db import connection
 from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import path, reverse
-from django.utils import timezone
 from afat.models import FatLink, Doctrine, Fat  # Fleet gibt es nicht, daher nutzen wir FatLink
-from afat.views.fatlinks import create_esi_fatlink, add_fatlink  # Verwende AFAT Funktion
 from esi.clients import esi_client_factory
 from esi.decorators import token_required
 from fittings.models import Doctrine
-from esi.models import Token, CallbackRedirect
-from esi.decorators import token_required
-from afat.views.fatlinks import *
-from afat.models import *
-from afat.models import get_hash_on_save
-from django.shortcuts import redirect
-from django.urls import reverse
-from esi.clients import esi_client_factory
-
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS
 from .models import FittingsDoctrine
@@ -176,27 +164,17 @@ def get_fleet_type_amount(selected_month, selected_year):
 
     return fleet_data
 
-
-
-@login_required
-@permission_required("afctrack.basic_access")
-@token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
-def start_fleet(request, token):
-    """Handles the fleet creation form and automatically creates a FAT link after submission."""
+def start_fleet(request):
+    """Handles the fleet creation form and updates the MOTD after submission."""
     
     doctrines = Doctrine.objects.all()
     fleet_types = ["Peacetime", "StratOP", "Mining", "Hive"]
-
     comms_options = [
-        {"name": "Capital OP", "url": "https://tinyurl.com/ywwp85u9"},
-        {"name": "OP1-Stratergic", "url": "https://tinyurl.com/IGCOP1"},
-        {"name": "OP2-Home Defense", "url": "https://tinyurl.com/IGCOP2"},
-        {"name": "OP3-CTA", "url": "https://tinyurl.com/3m64n62p"},
-        {"name": "OP4-Moon Event", "url": "https://tinyurl.com/mrh6436r"},
-        {"name": "OP5-ICE Event", "url": "https://tinyurl.com/mr5sspda"},
-        {"name": "OP6 - Peacetime", "url": "https://tinyurl.com/ymusr8k9"},
-        {"name": "OP7 - Peacetime", "url": "https://tinyurl.com/bp7r58ep"},
-        {"name": "OP8 - Peacetime", "url": "https://tinyurl.com/2dbcwwcu"}
+        {"name": "OP1", "url": "https://shorturl.at/Kg2ka"},
+        {"name": "OP2", "url": "https://shorturl.at/Kg2ka"},
+        {"name": "OP3", "url": "https://shorturl.at/Kg2ka"},
+        {"name": "OP4", "url": "https://shorturl.at/Kg2ka"},
+        {"name": "OP5", "url": "https://shorturl.at/Kg2ka"},
     ]
 
     if request.method == "POST":
@@ -220,47 +198,7 @@ def start_fleet(request, token):
         request.session['fleet_type'] = fleet_type
         request.session['comms'] = comms
 
-        try:
-            # Retrieve fleet boss character information from the database
-            fleet_boss_character = EveCharacter.objects.get(character_name=fleet_boss)
-
-            # Generate a unique hash for the FAT link
-            fatlink_hash = get_hash_on_save()
-
-            # Create a new FAT link
-            new_fatlink = FatLink(
-                created=timezone.now(),
-                fleet=fleet_name,
-                hash=fatlink_hash,
-                creator=request.user,
-                character=fleet_boss_character,
-                is_esilink=True,
-                is_registered_on_esi=True,  # Set to True if using ESI
-                fleet_type=fleet_type,
-                doctrine=doctrine_name,
-            )
-            new_fatlink.save()
-
-            # Set the default duration for the FAT link (e.g., 60 minutes)
-            duration = Duration(fleet=new_fatlink, duration=60)  # 60 minutes by default
-            duration.save()
-
-            # Log the creation of the FAT link
-            write_log(
-                request=request,
-                log_event=Log.Event.CREATE_FATLINK,
-                log_text=f"Automatisch erstellter FAT-Link für Fleet {fleet_name}",
-                fatlink_hash=fatlink_hash,
-            )
-
-            # Log success message
-            messages.success(request, "✅ FAT-Link erfolgreich erstellt für die Flotte!")
-
-        except Exception as e:
-            logger.exception(f"❌ Fehler beim Erstellen des FAT-Links: {str(e)}")
-            messages.error(request, "❌ Es gab einen Fehler bei der Erstellung des FAT-Links.")
-        
-        # Redirect to the update_motd page to set MOTD for the fleet
+        # Redirect to the update_fleet_motd view
         return HttpResponseRedirect(reverse('afctrack:update_fleet_motd'))
 
     return render(request, "afctrack/start_fleet.html", {
@@ -268,6 +206,7 @@ def start_fleet(request, token):
         "fleet_types": fleet_types,
         "comms_options": comms_options,
     })
+
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
 def update_fleet_motd(request, token):
@@ -299,12 +238,12 @@ def update_fleet_motd(request, token):
 
     # MOTD erstellen
     motd = f"""<br>
-            <font size="14" color="#ffff0000">Staging:</font><font size="14" color="#bfffffff"></font><font size="14" color="#ffd98d00"><loc><a href="showinfo:35834//1034323745897">P-ZMZV</a></loc></font>
-            <font size="14" color="#bfffffff">FC: </font><font size="14" color="#ffd98d00">{fleet_boss}</font>
-            <font size="14" color="#ff00ff00">Doctrine Link:</font><font size="14" color="#bfffffff"> </font><font size="14" color="#ffffe400"><a href="{doctrine_link}">{doctrine_name}</a></font>
-            <font size="14" color="#ff00ff00">Comms:</font><font size="14" color="#bfffffff"> </font><font size="14" color="#ffffe400"><a href="{comms}">{comms}</a></font>
-            <font size="13" color="#bfffffff">Boost Channel:</font><font size="14" color="#bfffffff"> </font><font size="13" color="#ff6868e1"><a href="joinChannel:player_2ec80ee18cbb11eebe4600109bd0f828">IGC Boost</a></font>
-            <font size="13" color="#bfffffff">Logi Channel:</font><font size="14" color="#bfffffff"> </font><font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font>
+            <font size="14" color="#ffff0000">Staging:</font><font size="14" color="#bfffffff"></font><font size="14" color="#ffd98d00"><loc><a href="showinfo:35834//1034323745897">P-ZMZV</a></loc></font><br>
+            <font size="14" color="#bfffffff">FC: </font><font size="14" color="#ffd98d00">{fleet_boss}</font><br>
+            <font size="14" color="#ff00ff00">Doctrine Link:</font><font size="14" color="#bfffffff"> </font><font size="14" color="#ffffe400"><a href="{doctrine_link}">{doctrine_name}</a></font><br>
+            <font size="14" color="#ff00ff00">Comms:</font><font size="14" color="#bfffffff"> </font><font size="14" color="#ffffe400"><a href="{comms}">{comms}</a></font><br>
+            <font size="13" color="#bfffffff">Boost Channel:</font><font size="14" color="#bfffffff"> </font><font size="13" color="#ff6868e1"><a href="joinChannel:player_2ec80ee18cbb11eebe4600109bd0f828">IGC Boost</a></font><br>
+            <font size="13" color="#bfffffff">Logi Channel:</font><font size="14" color="#bfffffff"> </font><font size="13" color="#ff6868e1"><a href="joinChannel:player_270f64b08cba11ee9f7c00109bd0f828">IGC Logi</a></font><br>
             <font size="14" color="#bfffffff"></font>"""
 
     # Set the MOTD via ESI
@@ -314,7 +253,7 @@ def update_fleet_motd(request, token):
         )
         api_response = response.result()
         logger.info(f"✅ Flotten-MOTD erfolgreich geändert: {motd}")
-        messages.success(request, "✅ MOTD erfolgreich gesetzt")
+        return JsonResponse({"status": "success", "message": "MOTD erfolgreich gesetzt", "esi_response": api_response}, status=200)
         return HttpResponseRedirect(reverse('afctrack:start_fleet'))
     except Exception as e:
         logger.exception(f"❌ Fehler beim Setzen der neuen MOTD: {e}")
