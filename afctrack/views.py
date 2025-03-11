@@ -347,8 +347,7 @@ def get_fleet_id(token):
         logger.error(f"❌ Error fetching fleet ID: {e}")
         return None
     
-@token_required(scopes=['esi-fleets.read_fleet.v1'])
-def create_esi_fleet(request, token):
+def create_esi_fleet(request):
     """
     Creates an ESI FAT link and redirects to the AFAT callback function.
     """
