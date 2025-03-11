@@ -353,11 +353,21 @@ def create_esi_fleet(request, token):
 
     fatlink_hash = get_hash_on_save()
 
-    # Store fleet info in session
-    request.session["fatlink_form__name"] = "Fleet Name"
-    request.session["fatlink_form__boss"] = "Fleet Boss"
-    request.session["fatlink_form__doctrine"] = "Fleet Doctrine"
-    request.session["fatlink_form__type"] = "Fleet Type"
-    request.session["fatlink_form__comms"] = "Fleet Comms"
-    # Corrected: Pass fatlink_hash as a positional argument
+    # Retrieve fleet data from session
+    fleet_name = request.session.get("fleet_name")
+    doctrine_name = request.session.get("doctrine_name")
+    fleet_type = request.session.get("fleet_type")
+    comms = request.session.get("comms")
+
+    if not all([fleet_name, doctrine_name, fleet_type, comms]):
+        messages.error(request, "❌ Missing fleet data in session")
+        return HttpResponseRedirect(reverse('afctrack:start_fleet'))
+
+    # Store fleet info in session for the FAT link creation
+    request.session["fatlink_form__name"] = fleet_name
+    request.session["fatlink_form__doctrine"] = doctrine_name
+    request.session["fatlink_form__type"] = fleet_type
+    request.session["fatlink_form__comms"] = comms
+
+    # Redirect with the FAT link hash
     return HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
