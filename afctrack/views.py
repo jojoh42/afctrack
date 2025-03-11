@@ -256,7 +256,6 @@ def start_fleet(request):
                 "doctrines": doctrines,
                 "fleet_types": fleet_types,
                 "comms_options": comms_options,
-                "fleet_name": fleet_name,
             })
 
         # Save data in session
@@ -272,7 +271,6 @@ def start_fleet(request):
         "doctrines": doctrines,
         "fleet_types": fleet_types,
         "comms_options": comms_options,
-        "fleet_name": fleet_name,
     })
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
