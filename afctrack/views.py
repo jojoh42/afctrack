@@ -256,6 +256,7 @@ def start_fleet(request):
                 "doctrines": doctrines,
                 "fleet_types": fleet_types,
                 "comms_options": comms_options,
+                "fleet_name": fleet_name,
             })
 
         # Save data in session
@@ -263,7 +264,7 @@ def start_fleet(request):
         request.session['doctrine_name'] = doctrine_name
         request.session['fleet_type'] = fleet_type
         request.session['comms'] = comms
-
+        request.session['fleet_name'] = fleet_name
         # Redirect to the update_fleet_motd view
         return HttpResponseRedirect(reverse('afctrack:update_fleet_motd'))
 
@@ -271,6 +272,7 @@ def start_fleet(request):
         "doctrines": doctrines,
         "fleet_types": fleet_types,
         "comms_options": comms_options,
+        "fleet_name": fleet_name,
     })
 
 @token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
