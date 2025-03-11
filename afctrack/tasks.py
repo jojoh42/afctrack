@@ -14,7 +14,7 @@ def delayed_updated_fleet_motd(session_data):
     logger.warning("🚀 Celery-Task gestartet mit Daten: %s", session_data)
 
     from django.contrib.auth.models import AnonymousUser
-    from afctrack.views import start_fleet
+    from afctrack.views import update_fleet_motd
 
     class DummyRequest:
         session = session_data
@@ -22,7 +22,7 @@ def delayed_updated_fleet_motd(session_data):
 
     logger.warning("🚀 Aufruf von update_fleet_motd mit DummyRequest")
 
-    result = start_fleet(DummyRequest(), None)  # Token bleibt None
+    result = update_fleet_motd(DummyRequest(), None)  # Token bleibt None
 
     logger.warning("✅ update_fleet_motd abgeschlossen mit Result: %s", result)
 

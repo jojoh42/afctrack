@@ -279,6 +279,7 @@ def update_fleet_motd(request, token):
     
     # Get data from session
     fleet_boss = request.session.get('fleet_boss')
+    fleet_name = request.session.get('fleet_name')
     doctrine_name = request.session.get('doctrine_name')
     fleet_type = request.session.get('fleet_type')
     comms = request.session.get('comms')
