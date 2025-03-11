@@ -354,7 +354,7 @@ def create_esi_fleet(request, token):
     fatlink_hash = get_hash_on_save()
 
     # ✅ Speichere Werte explizit in der Session
-    request.session["fatlink_form__name"] = request.session.get("fleet_boss", "Default Name")
+    request.session["fatlink_form__name"] = request.session.get("fleet_name", "Default Name")
     request.session["fatlink_form__doctrine"] = request.session.get("doctrine_name", "Default Doctrine")
     request.session["fatlink_form__type"] = request.session.get("fleet_type", "Default Type")
     
@@ -362,7 +362,7 @@ def create_esi_fleet(request, token):
 
     # Speichere nur relevante Daten für Celery
     session_data = {
-        "fleet_boss": request.session["fatlink_form__name"],
+        "fleet_name": request.session["fatlink_form__name"],
         "doctrine_name": request.session["fatlink_form__doctrine"],
         "fleet_type": request.session["fatlink_form__type"],
     }
