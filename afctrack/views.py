@@ -285,13 +285,18 @@ def update_fleet_motd(request, token):
         messages.error(request, "❌ Missing fleet data in session")
         return HttpResponseRedirect(reverse('afctrack:start_fleet'))
 
-    fatlink = FatLink.objects.filter(is_registered_on_esi=True).order_by('-created').first()
-    if not fatlink:
-        messages.error(request, "❌ No active fleet (FatLink) found.")
-        logger.warning("❌ Keine aktive Flotte (FatLink) gefunden.")
-        return HttpResponseRedirect(reverse('afctrack:start_fleet'))
+    # fatlink = FatLink.objects.filter(is_registered_on_esi=True).order_by('-created').first()
+    # if not fatlink:
+    #     messages.error(request, "❌ No active fleet (FatLink) found.")
+    #     logger.warning("❌ Keine aktive Flotte (FatLink) gefunden.")
+    #     return HttpResponseRedirect(reverse('afctrack:start_fleet'))
 
-    fleet_id = fatlink.esi_fleet_id
+    # fleet_id = fatlink.esi_fleet_id
+    fleet_id = get_fleet_id(token)
+    if not fleet_id:
+        messages.error(request, "❌ No active fleet (ESI) found.")
+        logger.warning("❌ Keine aktive Flotte (ESI) gefunden.")
+        return HttpResponseRedirect(reverse('afctrack:start_fleet'))
 
     # Doctrine-Link abrufen
     doctrine_link = "N/A"
@@ -324,3 +329,17 @@ def update_fleet_motd(request, token):
         logger.exception(f"❌ Fehler beim Setzen der neuen MOTD: {e}")
         messages.error(request, f"❌ Fehler beim Setzen der neuen MOTD: {e}")
         return HttpResponseRedirect(reverse('afctrack:start_fleet'))
+    
+def get_fleet_id(token):
+    """Fetch the fleet ID of the current character via ESI."""
+    try:
+        esi_client = esi_client_factory(token=token)
+        response = esi_client.Fleets.get_characters_character_id_fleet(
+            character_id=token.character_id,
+            token=token.access_token
+        )
+        fleet_data = response.result()
+        return fleet_data.get('fleet_id')  # Extract fleet_id if available
+    except Exception as e:
+        logger.error(f"❌ Error fetching fleet ID: {e}")
+        return None
