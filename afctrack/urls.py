@@ -9,5 +9,5 @@ urlpatterns = [
     path('fleet_type_amount/', views.fleet_type_amount, name='fleet_type_amount'),
     path('start_fleet/', views.start_fleet, name='start_fleet'),
     path('update_fleet_motd/', views.update_fleet_motd, name='update_fleet_motd'),  # Removed the parameters
-#    path('create_esi_fleet/', views.create_esi_fleet, name='create_esi_fleet'),
+    path('create_esi_fleet/', views.create_esi_fleet, name='create_esi_fleet'),
 ]

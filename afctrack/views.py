@@ -14,6 +14,7 @@ from esi.decorators import token_required
 from fittings.models import Doctrine
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS, DEFAULT_BUDGET,FLEET_TYPES, COMMS_OPTIONS
+from afat.models import get_hash_on_save
 
 logger = logging.getLogger(__name__)  # ✅ Logging setup
 
@@ -324,7 +325,7 @@ def update_fleet_motd(request, token):
         api_response = response.result()
         logger.info(f"✅ Flotten-MOTD erfolgreich geändert: {motd}")
         messages.success(request, "✅ MOTD erfolgreich gesetzt")
-        return HttpResponseRedirect(reverse('afctrack:start_fleet'))
+        return HttpResponseRedirect(reverse('afctrack:create_esi_fleet'))
     except Exception as e:
         logger.exception(f"❌ Fehler beim Setzen der neuen MOTD: {e}")
         messages.error(request, f"❌ Fehler beim Setzen der neuen MOTD: {e}")
@@ -343,3 +344,21 @@ def get_fleet_id(token):
     except Exception as e:
         logger.error(f"❌ Error fetching fleet ID: {e}")
         return None
+    
+@token_required(scopes=['esi-fleets.read_fleet.v1'])
+def create_esi_fleet(request, token):
+    """
+    Creates an ESI FAT link and redirects to the AFAT callback function.
+    """
+
+    fatlink_hash = get_hash_on_save()
+
+    # Store fleet info in session
+    request.session["fatlink_from__creator_id"] = token.character_id
+    request.session["fatlink_form__name"] = start_fleet.fleet_name
+    request.session["fatlink_form__doctrine"] = start_fleet.fleet_doctrine
+    request.session["fatlink_form__type"] = start_fleet.fleet_type
+    request.session["fatlink_form__comms"] = start_fleet.fleet_comms
+
+    # Corrected: Pass fatlink_hash as a positional argument
+    return HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
