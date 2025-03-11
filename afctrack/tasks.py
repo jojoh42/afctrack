@@ -13,8 +13,6 @@ def delayed_updated_fleet_motd(session_data):
 
     logger.warning("🚀 Celery-Task gestartet mit Daten: %s", session_data)
 
-    time.sleep(5)  # Kürzere Wartezeit zum Testen
-
     from django.contrib.auth.models import AnonymousUser
     from afctrack.views import update_fleet_motd
 

@@ -15,6 +15,7 @@ from fittings.models import Doctrine
 from .models import POINTS
 from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS, DEFAULT_BUDGET,FLEET_TYPES, COMMS_OPTIONS
 from afat.models import get_hash_on_save
+from .tasks import delayed_updated_fleet_motd
 
 logger = logging.getLogger(__name__)  # ✅ Logging setup
 
@@ -350,19 +351,24 @@ def create_esi_fleet(request, token):
     """
     Creates an ESI FAT link and redirects to the AFAT callback function.
     """
-
     fatlink_hash = get_hash_on_save()
 
+    # ✅ Speichere Werte explizit in der Session
+    request.session["fatlink_form__name"] = request.session.get("fleet_boss", "Default Name")
+    request.session["fatlink_form__doctrine"] = request.session.get("doctrine_name", "Default Doctrine")
+    request.session["fatlink_form__type"] = request.session.get("fleet_type", "Default Type")
+    
+    request.session.save()  # 🔥 WICHTIG: Session-Änderungen speichern
+
+    # Speichere nur relevante Daten für Celery
     session_data = {
-        "fleet_name": request.session.get("fleet_name"),
-        "doctrine_name": request.session.get("doctrine_name"),
-        "fleet_type": request.session.get("fleet_type"),
+        "fleet_boss": request.session["fatlink_form__name"],
+        "doctrine_name": request.session["fatlink_form__doctrine"],
+        "fleet_type": request.session["fatlink_form__type"],
     }
 
-    if not all([session_data]):
-        messages.error(request, "❌ Missing fleet data in session")
-        return HttpResponseRedirect(reverse('afctrack:start_fleet'))
-    
-    response = HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
-    update_fleet_motd.apply_async((session_data,), countdown=5)
-    return response
+    # ✅ Starte Celery Task
+    delayed_updated_fleet_motd(args=[session_data])
+
+    # Redirect zur FATLink-Erstellung
+    return HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
