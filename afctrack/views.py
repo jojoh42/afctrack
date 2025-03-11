@@ -364,5 +364,5 @@ def create_esi_fleet(request, token):
         return HttpResponseRedirect(reverse('afctrack:start_fleet'))
     
     response = HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
-
+    update_fleet_motd.apply_async((session_data,), countdown=5)
     return response
