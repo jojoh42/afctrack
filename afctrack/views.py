@@ -368,7 +368,7 @@ def create_esi_fleet(request, token):
     }
 
     # ✅ Starte Celery Task
-    delayed_updated_fleet_motd(args=[session_data])
+    delayed_updated_fleet_motd.apply_async(args=[session_data])
 
     # Redirect zur FATLink-Erstellung
     return HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))
