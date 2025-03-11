@@ -16,7 +16,7 @@ FLEET_TYPES = getattr(settings, "AFCTRACK_FLEET_TYPES", ["Peacetime", "Strat OP"
 # Kommunikations-Optionen
 COMMS_OPTIONS = getattr(settings, "AFCTRACK_COMMS_OPTIONS", [
     {"name": "Capital OP", "url": "https://tinyurl.com/ywwp85u9"},
-    {"name": "OP1-Stratergic", "url": "https://tinyurl.com/IGCOP1"},
+    {"name": "OP1-Stratergic", "url": "https://tinyurl.com/59r53bhj"},
     {"name": "OP2-Home Defense", "url": "https://tinyurl.com/IGCOP2"},
     {"name": "OP3-CTA", "url": "https://tinyurl.com/3m64n62p"},
     {"name": "OP4-Moon Event", "url": "https://tinyurl.com/mrh6436r"},
