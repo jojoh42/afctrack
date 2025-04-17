@@ -305,7 +305,11 @@ def update_fleet_motd(request, token):
     doctrine_link = "N/A"
     try:
         doctrine_obj = Doctrine.objects.get(name=doctrine_name)
-        doctrine_link = f"https://aa.igc-alliance.online/fittings/doctrine/{doctrine_obj.id}"
+        domain = request.get_host()
+        scheme = 'https' if request.is_secure() else 'http'
+        base_url = f"{scheme}://{domain}"
+        doctrine_link = f"{base_url}/fittings/doctrine/{doctrine_obj.id}"
+#        doctrine_link = f"https://aa.igc-alliance.online/fittings/doctrine/{doctrine_obj.id}"
     except Doctrine.DoesNotExist:
         logger.warning(f"⚠️ Doktrin '{doctrine_name}' existiert nicht. Standard-Link wird verwendet.")
 
