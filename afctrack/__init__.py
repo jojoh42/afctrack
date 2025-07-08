@@ -1,4 +1,4 @@
 """Initialize the app"""
 
-__version__ = "0.3.73"
+__version__ = "1"
 __title__ = "afctrack"
