@@ -49,7 +49,7 @@ def get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
         created__year=selected_year
     ).values('creator_id__username', 'fleet_type').annotate(
         fleet_count=Count('id'),
-        total_participants=Count('fat__id')
+        total_participants=Count('afat_fat__id')
     ).order_by('creator_id__username', 'fleet_type')
 
     player_data = {}
