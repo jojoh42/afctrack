@@ -12,8 +12,7 @@ from afat.models import FatLink, Doctrine, Fat  # Fleet gibt es nicht, daher nut
 from esi.clients import esi_client_factory
 from esi.decorators import token_required
 from fittings.models import Doctrine
-from .models import POINTS
-from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS, DEFAULT_BUDGET, FLEET_TYPES, COMMS_OPTIONS
+from .app_settings import POINTS, AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS, DEFAULT_BUDGET, FLEET_TYPES, COMMS_OPTIONS
 from afat.models import get_hash_on_save
 from .tasks import delayed_updated_fleet_motd
 
