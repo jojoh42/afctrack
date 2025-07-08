@@ -3,81 +3,88 @@
 {% load humanize %}
 
 {% block details %}
-<!-- Fleet Counts Panel -->
-<div class="panel panel-info">
-    <div class="panel-heading">
-        <h3 class="panel-title">{% translate "Fleet Counts" %}</h3>
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+        <span><i class="fas fa-users"></i> {% translate "Fleet Payments for" %} {{ month_name }} {{ selected_year }}</span>
+        <span data-bs-toggle="tooltip" title="This table shows ISK payments based on fleet activity.">
+            <i class="fas fa-info-circle"></i>
+        </span>
     </div>
-    <div class="panel-body">
+    <div class="card-body">
         <!-- Budget and Date Selection Form -->
-        <form method="get" id="budget-form">
-            <div class="form-group">
-                <label for="budget">{% translate "Budget (ISK)" %}:</label>
-                <input
-                    type="number"
-                    id="budget"
-                    name="budget"
-                    value="{{ budget|default:3000000000 }}"  # Default budget value
-                    min="0"
-                    step="1"
-                    class="form-control"
-                    required
-                />
+        <form method="get" id="budget-form" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="budget" class="form-label">{% translate "Budget (ISK)" %}
+                    <span data-bs-toggle="tooltip" title="Total ISK to distribute.">
+                        <i class="fas fa-question-circle text-info"></i>
+                    </span>
+                </label>
+                <input type="number" id="budget" name="budget" value="{{ budget|default:3000000000 }}" min="0" step="1" class="form-control" required />
             </div>
-            <!-- Month Selector -->
-            <div class="form-group">
-                <label for="month">{% translate "Month" %}:</label>
-                <select id="month" name="month" class="form-control" required>
+            <div class="col-md-3">
+                <label for="month" class="form-label">{% translate "Month" %}</label>
+                <select id="month" name="month" class="form-select" required>
                     {% for month in available_months %}
-                        <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>
-                            {{ month }}
-                        </option>
+                        <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>{{ month }}</option>
                     {% endfor %}
                 </select>
             </div>
-
-            <!-- Year Selector -->
-            <div class="form-group">
-                <label for="year">{% translate "Year" %}:</label>
-                <select id="year" name="year" class="form-control" required>
+            <div class="col-md-3">
+                <label for="year" class="form-label">{% translate "Year" %}</label>
+                <select id="year" name="year" class="form-select" required>
                     {% for year in available_years %}
-                        <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>
-                            {{ year }}
-                        </option>
+                        <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
                     {% endfor %}
                 </select>
             </div>
-
-            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
-                {% translate "Update Data" %}
-            </button>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-success w-100">
+                    <i class="fas fa-sync-alt"></i> {% translate "Update Data" %}
+                </button>
+            </div>
         </form>
         <hr />
-
+        <!-- Loading spinner placeholder -->
+        <div id="loading-spinner" class="text-center my-3" style="display:none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
         {% if player_payments %}
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>{% translate "Player Name" %}</th>
-                        <th>{% translate "Total Fleets Created" %}</th>
-                        <th>{% translate "Average Participants" %}</th>
-                        <th>{% translate "Payment Amount" %}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for player in player_payments %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-light">
                         <tr>
-                            <td>{{ player.player_name }}</td>
-                            <td>{{ player.fleet_count }}</td>
-                            <td>{{ player.avg_participants|floatformat:1 }}</td> <!-- Display avg participants -->
-                            <td>{{ player.payment|intcomma }}</td> <!-- Format payment -->
+                            <th scope="col">{% translate "Player Name" %}</th>
+                            <th scope="col">{% translate "Total Fleets Created" %} <i class="fas fa-ship" data-bs-toggle="tooltip" title="Number of fleets led by this player."></i></th>
+                            <th scope="col">{% translate "Average Participants" %} <i class="fas fa-users" data-bs-toggle="tooltip" title="Average number of participants per fleet."></i></th>
+                            <th scope="col">{% translate "Payment Amount" %} <i class="fas fa-coins" data-bs-toggle="tooltip" title="ISK payment for this player."></i></th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% for player in player_payments %}
+                            <tr>
+                                <td><span class="fw-bold">{{ player.player_name }}</span></td>
+                                <td><span class="badge bg-info">{{ player.fleet_count }}</span></td>
+                                <td>{{ player.avg_participants|floatformat:1 }}</td>
+                                <td><span class="badge bg-success">{{ player.payment|intcomma }}</span></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% else %}
-            <p>{% translate "No fleet count data available." %}</p>
+            <div class="alert alert-warning mt-3" role="alert">
+                <i class="fas fa-exclamation-circle"></i> {% translate "No fleet count data available." %}
+            </div>
         {% endif %}
     </div>
 </div>
+<script>
+    // Enable Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+</script>
 {% endblock %}

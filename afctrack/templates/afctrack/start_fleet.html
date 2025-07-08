@@ -3,76 +3,103 @@
 {% load humanize %}
 
 {% block details %}
-<!-- Fleet Management Panel -->
-<div class="panel panel-info">
-    <div class="panel-heading">
-        <h3 class="panel-title">{% translate "Fleet Management" %}</h3>
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+        <span><i class="fas fa-flag"></i> {% translate "Fleet Management" %}</span>
+        <span data-bs-toggle="tooltip" title="Use this form to start a new fleet and set its MOTD.">
+            <i class="fas fa-info-circle"></i>
+        </span>
     </div>
-    <div class="panel-body">
+    <div class="card-body">
+        <div class="alert alert-info" role="alert">
+            <i class="fas fa-info-circle"></i> {% translate "Fill out the form below to start a new fleet. All fields are required." %}
+        </div>
         <!-- Fleet Input Form -->
-        <form method="post">
+        <form method="post" autocomplete="off">
             {% csrf_token %}
-
             <!-- Fleet Boss Name -->
-            <div class="form-group">
-                <label for="fleet_boss">{% translate "Fleet Boss (EVE Character)" %}:</label>
-                <input
-                    type="text"
-                    id="fleet_boss"
-                    name="fleet_boss"
-                    class="form-control"
-                    required
-                />
+            <div class="mb-3">
+                <label for="fleet_boss" class="form-label">{% translate "Fleet Boss (EVE Character)" %}
+                    <span data-bs-toggle="tooltip" title="Enter the EVE character name of the fleet boss.">
+                        <i class="fas fa-question-circle text-info"></i>
+                    </span>
+                </label>
+                <input type="text" id="fleet_boss" name="fleet_boss" class="form-control" required placeholder="e.g. John Doe" />
+                <div class="form-text">{% translate "The character leading the fleet." %}</div>
             </div>
-
             <!-- Fleet Name -->
-            <div class="form-group">
-                <label for="fleet_name">{% translate "Fleet Name" %}:</label>
-                <input
-                    type="text"
-                    id="fleet_name"
-                    name="fleet_name"
-                    class="form-control"
-                    required
-                />
+            <div class="mb-3">
+                <label for="fleet_name" class="form-label">{% translate "Fleet Name" %}
+                    <span data-bs-toggle="tooltip" title="Give your fleet a unique name.">
+                        <i class="fas fa-question-circle text-info"></i>
+                    </span>
+                </label>
+                <input type="text" id="fleet_name" name="fleet_name" class="form-control" required placeholder="e.g. Mining Monday" />
+                <div class="form-text">{% translate "A descriptive name for your fleet." %}</div>
             </div>
-
             <!-- Doctrine Auswahl -->
-            <div class="form-group">
-                <label for="doctrine">{% translate "Setup / Doctrine" %}:</label>
-                <select id="doctrine" name="doctrine" class="form-control" required>
+            <div class="mb-3">
+                <label for="doctrine" class="form-label">{% translate "Setup / Doctrine" %}
+                    <span data-bs-toggle="tooltip" title="Select the doctrine/setup for this fleet.">
+                        <i class="fas fa-question-circle text-info"></i>
+                    </span>
+                </label>
+                <select id="doctrine" name="doctrine" class="form-select" required>
                     <option value="">{% translate "Select Doctrine" %}</option>
                     {% for doctrine in doctrines %}
                         <option value="{{ doctrine.name }}">{{ doctrine.name }}</option>
                     {% endfor %}
                 </select>
+                <div class="form-text">{% translate "Choose the doctrine that fits your fleet." %}</div>
             </div>
-
             <!-- Fleet Type Auswahl -->
-            <div class="form-group">
-                <label for="fleet_type">{% translate "Fleet Type" %}:</label>
-                <select id="fleet_type" name="fleet_type" class="form-control" required>
+            <div class="mb-3">
+                <label for="fleet_type" class="form-label">{% translate "Fleet Type" %}
+                    <span data-bs-toggle="tooltip" title="Select the type of fleet.">
+                        <i class="fas fa-question-circle text-info"></i>
+                    </span>
+                </label>
+                <select id="fleet_type" name="fleet_type" class="form-select" required>
                     {% for type in fleet_types %}
                         <option value="{{ type }}">{{ type }}</option>
                     {% endfor %}
                 </select>
+                <div class="form-text">{% translate "What kind of fleet are you running?" %}</div>
             </div>
-
             <!-- Comms Auswahl -->
-            <div class="form-group">
-                <label for="comms">{% translate "Comms" %}:</label>
-                <select id="comms" name="comms" class="form-control" required>
+            <div class="mb-3">
+                <label for="comms" class="form-label">{% translate "Comms" %}
+                    <span data-bs-toggle="tooltip" title="Select the comms channel for this fleet.">
+                        <i class="fas fa-question-circle text-info"></i>
+                    </span>
+                </label>
+                <select id="comms" name="comms" class="form-select" required>
                     {% for comm in comms_options %}
                         <option value="{{ comm.url }}">{{ comm.name }}</option>
                     {% endfor %}
                 </select>
+                <div class="form-text">{% translate "Where will your fleet communicate?" %}</div>
             </div>
-
             <!-- Submit Button -->
-            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
-                {% translate "Submit Fleet" %}
-            </button>
+            <div class="d-grid">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-paper-plane"></i> {% translate "Submit Fleet" %}
+                </button>
+            </div>
         </form>
+        <!-- Loading spinner placeholder -->
+        <div id="loading-spinner" class="text-center my-3" style="display:none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
     </div>
 </div>
+<script>
+    // Enable Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+</script>
 {% endblock %}

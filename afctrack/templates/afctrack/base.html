@@ -11,23 +11,36 @@
 {% endblock header_nav_brand %}
 
 {% block header_nav_collapse_left %}
-    <!-- Remove any includes of missing templates -->
-    <ul class="nav-item">
-        <a href="{% url 'afctrack:index' %}" class="nav-link">{% translate "Home" %}</a>
-    </ul>
-    <ul class="nav-item">
-        <a href="{% url 'afctrack:doctrine_amount' %}" class="nav-link">{% translate "Doctrine Amount" %}</a>
-    </ul>
-    <ul class="nav-item">
-        <a href="{% url 'afctrack:fleet_type_amount' %}" class="nav-link">{% translate "Fleet Type Amount" %}</a>
-    </ul>
-    <ul class="nav-item">
-        <a href="{% url 'afctrack:start_fleet' %}" class="nav-link">{% translate "Start a Fleet" %}</a>
+    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+            <a href="{% url 'afctrack:index' %}" class="nav-link">{% translate "Home" %}</a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'afctrack:doctrine_amount' %}" class="nav-link">{% translate "Doctrine Amount" %}</a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'afctrack:fleet_type_amount' %}" class="nav-link">{% translate "Fleet Type Amount" %}</a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'afctrack:start_fleet' %}" class="nav-link">{% translate "Start a Fleet" %}</a>
+        </li>
     </ul>
 {% endblock header_nav_collapse_left %}
 
 {% block content %}
-    <div class="allianceauth-afctrack-plugin">
+    <div class="container mt-4 allianceauth-afctrack-plugin">
+        {% if messages %}
+            <div class="row">
+                <div class="col-12">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
         {% block details %}{% endblock %}
     </div>
 {% endblock %}

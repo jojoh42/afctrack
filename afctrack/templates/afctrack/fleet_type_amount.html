@@ -3,65 +3,78 @@
 {% load humanize %}
 
 {% block details %}
-<div class="panel panel-info">
-    <div class="panel-heading">
-        <h3 class="panel-title">{% translate "Fleet Type Amounts" %}</h3>
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+        <span><i class="fas fa-ship"></i> {% translate "Fleet Type Amounts" %}</span>
+        <span data-bs-toggle="tooltip" title="This table shows fleet type statistics.">
+            <i class="fas fa-info-circle"></i>
+        </span>
     </div>
-    <div class="panel-body">
+    <div class="card-body">
         <!-- Date Selection Form -->
-        <form method="get" id="doctrine-form">
-            <!-- Month Selector -->
-            <div class="form-group">
-                <label for="month">{% translate "Month" %}:</label>
-                <select id="month" name="month" class="form-control" required>
+        <form method="get" id="doctrine-form" class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label for="month" class="form-label">{% translate "Month" %}</label>
+                <select id="month" name="month" class="form-select" required>
                     {% for month in available_months %}
-                        <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>
-                            {{ month }}
-                        </option>
+                        <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>{{ month }}</option>
                     {% endfor %}
                 </select>
             </div>
-
-            <!-- Year Selector -->
-            <div class="form-group">
-                <label for="year">{% translate "Year" %}:</label>
-                <select id="year" name="year" class="form-control" required>
+            <div class="col-md-6">
+                <label for="year" class="form-label">{% translate "Year" %}</label>
+                <select id="year" name="year" class="form-select" required>
                     {% for year in available_years %}
-                        <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>
-                            {{ year }}
-                        </option>
+                        <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
                     {% endfor %}
                 </select>
             </div>
-
-            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
-                {% translate "Update Data" %}
-            </button>
+            <div class="col-12">
+                <button type="submit" class="btn btn-success w-100">
+                    <i class="fas fa-sync-alt"></i> {% translate "Update Data" %}
+                </button>
+            </div>
         </form>
         <hr />
-
+        <!-- Loading spinner placeholder -->
+        <div id="loading-spinner" class="text-center my-3" style="display:none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
         {% if fleet_type_counts %}
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>{% translate "Fleet Type" %}</th>
-                        <th>{% translate "Fleet Count" %}</th>
-                        <th>{% translate "Average Participants" %}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for fleet in fleet_type_counts %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-light">
                         <tr>
-                            <td>{{ fleet.fleet_type }}</td>
-                            <td>{{ fleet.fleet_count|intcomma }}</td>
-                            <td>{{ fleet.avg_participants|floatformat:1 }}</td>
+                            <th scope="col">{% translate "Fleet Type" %} <i class="fas fa-ship" data-bs-toggle="tooltip" title="Type of fleet."></i></th>
+                            <th scope="col">{% translate "Fleet Count" %} <i class="fas fa-hashtag" data-bs-toggle="tooltip" title="Number of fleets of this type."></i></th>
+                            <th scope="col">{% translate "Average Participants" %} <i class="fas fa-users" data-bs-toggle="tooltip" title="Average participants per fleet type."></i></th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% for fleet in fleet_type_counts %}
+                            <tr>
+                                <td><span class="fw-bold">{{ fleet.fleet_type }}</span></td>
+                                <td><span class="badge bg-info">{{ fleet.fleet_count|intcomma }}</span></td>
+                                <td>{{ fleet.avg_participants|floatformat:1 }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% else %}
-            <p>{% translate "No fleet type data available." %}</p>
+            <div class="alert alert-warning mt-3" role="alert">
+                <i class="fas fa-exclamation-circle"></i> {% translate "No fleet type data available." %}
+            </div>
         {% endif %}
     </div>
 </div>
+<script>
+    // Enable Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+</script>
 {% endblock %}
