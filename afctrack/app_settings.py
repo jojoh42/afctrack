@@ -11,7 +11,7 @@ AFCTRACK_FLEET_TYPE_GROUPS = getattr(settings, "AFCTRACK_FLEET_TYPE_GROUPS", ["j
 DEFAULT_BUDGET = getattr(settings, "AFCTRACK_BUDGET", "3000000000")
 
 # Flotten-Typen
-FLEET_TYPES = getattr(settings, "AFCTRACK_FLEET_TYPES", ["Peacetime", "Strat OP", "Mining", "Hive", "CTA", "ADM", "Home Defense", "Incursion"])
+FLEET_TYPES = getattr(settings, "AFCTRACK_FLEET_TYPES", ["Peacetime", "Strat OP", "Mining", "Hive", "CTA", "ADM", "Home Defense", "Incursion", "Caps"])
 
 # Kommunikations-Optionen
 COMMS_OPTIONS = getattr(settings, "AFCTRACK_COMMS_OPTIONS", [
@@ -30,6 +30,7 @@ COMMS_OPTIONS = getattr(settings, "AFCTRACK_COMMS_OPTIONS", [
 POINTS = getattr(settings, "AFCTRACK_POINTS", {
     'Peacetime': 0.5,
     'Strat OP': 1,
+    'Caps': 1,
     'CTA': 1,
     'Hive': 1.5,
     'ADM': 0.5,

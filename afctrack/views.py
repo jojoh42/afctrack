@@ -4,7 +4,7 @@ from datetime import datetime
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render
 from django.contrib.auth.models import User
-from django.db.models import Count
+from django.db.models import Count, Prefetch
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.urls import reverse
@@ -13,49 +13,53 @@ from esi.clients import esi_client_factory
 from esi.decorators import token_required
 from fittings.models import Doctrine
 from .models import POINTS
-from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS, DEFAULT_BUDGET,FLEET_TYPES, COMMS_OPTIONS
+from .app_settings import AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS, DEFAULT_BUDGET, FLEET_TYPES, COMMS_OPTIONS
 from afat.models import get_hash_on_save
 from .tasks import delayed_updated_fleet_motd
 
 logger = logging.getLogger(__name__)  # ✅ Logging setup
 
+# Helper functions
 
-# ESI API URLs
-ESI_FLEET_URL = "https://esi.evetech.net/latest/fleets/{fleet_id}/"
-ESI_UPDATE_MOTD_URL = "https://esi.evetech.net/latest/fleets/{fleet_id}/motd/"
-ESI_CHARACTER_FLEET_URL = "https://esi.evetech.net/latest/characters/{character_id}/fleet/"
+def get_selected_month_year(request):
+    """Get selected month and year from GET params or use current."""
+    now = datetime.now()
+    selected_month = int(request.GET.get('month', now.month))
+    selected_year = int(request.GET.get('year', now.year))
+    return selected_month, selected_year
+
+def get_available_months_years():
+    now = datetime.now()
+    return list(range(1, 13)), list(range(now.year - 5, now.year + 1))
 
 @login_required
 @permission_required("afctrack.basic_access")
 def get_fleet_counts_and_payment(request, budget, selected_month, selected_year):
-    print(f"Request user: {request.user}")
     """
     Get fleet counts and calculate the payment for each user based on their fleet count, doctrine, and participants.
     Returns a list of dictionaries with player names, payments, and average participants.
+    Optimized to avoid N+1 queries.
     """
-    current_month = selected_month
-    current_year = selected_year
-
     fc_users_ids = User.objects.filter(groups__name__in=AFCTRACK_FC_GROUPS).values_list('id', flat=True)
-    
-    # Filter FatLink by those users and the selected month/year
+
+    # Annotate FatLink with participant counts
     fleet_counts = FatLink.objects.filter(
         creator_id__in=fc_users_ids,
-        created__month=current_month,
-        created__year=current_year
-    ).values('creator_id__username', 'id', 'fleet_type')\
-     .annotate(fleet_count=Count('id')).order_by('creator_id__username', 'fleet_type')
+        created__month=selected_month,
+        created__year=selected_year
+    ).values('creator_id__username', 'fleet_type').annotate(
+        fleet_count=Count('id'),
+        total_participants=Count('fat__id')
+    ).order_by('creator_id__username', 'fleet_type')
 
     player_data = {}
     total_fleet_points = 0
 
     for fleet in fleet_counts:
         player_name = fleet['creator_id__username']
-        fleet_id = fleet['id']
         fleet_type = fleet['fleet_type']
         fleet_count = fleet['fleet_count']
-
-        participant_count = Fat.objects.filter(fatlink_id=fleet_id).count()
+        participant_count = fleet['total_participants']
         fleet_points = POINTS.get(fleet_type, 0)
 
         if player_name not in player_data:
@@ -70,12 +74,7 @@ def get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
         player_data[player_name]['total_participants'] += participant_count
         total_fleet_points += fleet_points * fleet_count
 
-    if total_fleet_points > 0:
-        isk_per_point = budget / total_fleet_points
-        round_isk_per_point = round(isk_per_point)
-    else:
-        isk_per_point = 0
-        round_isk_per_point = round(isk_per_point)
+    round_isk_per_point = round(budget / total_fleet_points) if total_fleet_points > 0 else 0
 
     player_payments = []
     for player_name, data in player_data.items():
@@ -84,7 +83,7 @@ def get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
         player_payments.append({
             'player_name': player_name,
             'fleet_count': data['total_fleet_count'],
-            'avg_participants': avg_participants,
+            'avg_participants': round(avg_participants, 1),
             'payment': payment,
         })
 
@@ -161,16 +160,14 @@ def get_fleet_type_amount(selected_month, selected_year):
     return fleet_data
 
 def index(request):
-    current_month = datetime.now().month
-    current_year = datetime.now().year
-
-    selected_month = int(request.GET.get('month', current_month))
-    selected_year = int(request.GET.get('year', current_year))
-
-    available_months = list(range(1, 13))  
-    available_years = list(range(current_year - 5, current_year + 1))
-
-    budget = int(request.GET.get('budget', DEFAULT_BUDGET))
+    """Main index view for FC tracker."""
+    selected_month, selected_year = get_selected_month_year(request)
+    available_months, available_years = get_available_months_years()
+    try:
+        budget = int(request.GET.get('budget', DEFAULT_BUDGET))
+    except ValueError:
+        budget = int(DEFAULT_BUDGET)
+        messages.error(request, "Invalid budget value. Using default.")
 
     player_payments = get_fleet_counts_and_payment(request, budget, selected_month, selected_year)
 
@@ -183,22 +180,14 @@ def index(request):
         'selected_month': selected_month,
         'selected_year': selected_year,
     }
-
     return render(request, 'afctrack/index.html', context)
 
 
 def doctrine_amount(request):
-    current_month = datetime.now().month
-    current_year = datetime.now().year
-
-    selected_month = int(request.GET.get('month', current_month))
-    selected_year = int(request.GET.get('year', current_year))
-
-    available_months = list(range(1, 13))  
-    available_years = list(range(current_year - 5, current_year + 1))
-
+    """View for doctrine amount stats."""
+    selected_month, selected_year = get_selected_month_year(request)
+    available_months, available_years = get_available_months_years()
     doctrine_counts = get_doctrine_counts(selected_month, selected_year)
-
     context = {
         'month_name': calendar.month_name[selected_month],
         'available_months': available_months,
@@ -207,22 +196,14 @@ def doctrine_amount(request):
         'selected_month': selected_month,
         'selected_year': selected_year,
     }
-
     return render(request, "afctrack/doctrine_amount.html", context)
 
 
 def fleet_type_amount(request):
-    current_month = datetime.now().month
-    current_year = datetime.now().year
-
-    selected_month = int(request.GET.get('month', current_month))
-    selected_year = int(request.GET.get('year', current_year))
-
-    available_months = list(range(1, 13))  
-    available_years = list(range(current_year - 5, current_year + 1))
-
+    """View for fleet type amount stats."""
+    selected_month, selected_year = get_selected_month_year(request)
+    available_months, available_years = get_available_months_years()
     fleet_data = get_fleet_type_amount(selected_month, selected_year)
-
     context = {
         'month_name': calendar.month_name[selected_month],
         'available_months': available_months,
@@ -231,7 +212,6 @@ def fleet_type_amount(request):
         'selected_month': selected_month,
         'selected_year': selected_year,
     }
-
     return render(request, "afctrack/fleet_type_amount.html", context)
 
 @login_required
