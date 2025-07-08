@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from .app_settings import POINTS
+# from .app_settings import POINTS  # Removed to fix circular import
 from solo.models import SingletonModel  # type: ignore
 import json
 
@@ -14,7 +14,7 @@ class General(models.Model):
         )
 
 # Doctrine points
-POINTS = POINTS
+# POINTS = POINTS # This line is removed as per the edit hint.
 
 def get_current_month_and_year():
     """
