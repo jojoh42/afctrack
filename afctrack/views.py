@@ -357,13 +357,23 @@ def create_esi_fleet(request):
     """
     fatlink_hash = get_hash_on_save()
 
+    # Retrieve data passed via URL parameters
+    fleet_name = request.GET.get('fleet_name')
+    doctrine_name = request.GET.get('doctrine_name')
+    fleet_type = request.GET.get('fleet_type')
+
+    # AFAT requires these values in the session to create the FAT link.
+    request.session["fatlink_form__name"] = fleet_name
+    request.session["fatlink_form__doctrine"] = doctrine_name
+    request.session["fatlink_form__type"] = fleet_type
+
     # Get data from GET parameters for Celery task
     session_data = {
         "fleet_boss": request.GET.get('fleet_boss'),
-        "doctrine_name": request.GET.get('doctrine_name'),
+        "doctrine_name": doctrine_name,
         "comms": request.GET.get('comms'),
-        "fleet_name": request.GET.get('fleet_name'),
-        "fleet_type": request.GET.get('fleet_type'),
+        "fleet_name": fleet_name,
+        "fleet_type": fleet_type,
         "base_url": f"{'https' if request.is_secure() else 'http'}://{request.get_host()}"
     }
 
