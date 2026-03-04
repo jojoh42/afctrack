@@ -15,6 +15,7 @@ from fittings.models import Doctrine
 from .app_settings import POINTS, AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS, DEFAULT_BUDGET, FLEET_TYPES, COMMS_OPTIONS
 from afat.models import get_hash_on_save
 from .tasks import delayed_updated_fleet_motd
+from esi.models import Token
 
 logger = logging.getLogger(__name__)  # ✅ Logging setup
 
@@ -252,41 +253,27 @@ def start_fleet(request):
         "comms_options": comms_options,
     })
 
-@token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
-def update_fleet_motd(request, token):
-    """Updates the MOTD for the fleet."""
-    
-    # Get data from session
-    fleet_boss = request.session.get('fleet_boss')
-    fleet_name = request.session.get('fleet_name')
-    doctrine_name = request.session.get('doctrine_name')
-    fleet_type = request.session.get('fleet_type')
-    comms = request.session.get('comms')
-
+def set_fleet_motd(token, fleet_boss, doctrine_name, comms, base_url, request=None):
+    """
+    Helper function to set the fleet MOTD.
+    Can be called from a view (with request) or a task (without request).
+    """
     if not all([fleet_boss, doctrine_name, fleet_type, comms]):
-        messages.error(request, "❌ Missing fleet data in session")
-        return HttpResponseRedirect(reverse('afctrack:start_fleet'))
+        if request:
+            messages.error(request, "❌ Missing fleet data")
+        return False
 
-    # fatlink = FatLink.objects.filter(is_registered_on_esi=True).order_by('-created').first()
-    # if not fatlink:
-    #     messages.error(request, "❌ No active fleet (FatLink) found.")
-    #     logger.warning("❌ Keine aktive Flotte (FatLink) gefunden.")
-    #     return HttpResponseRedirect(reverse('afctrack:start_fleet'))
-
-    # fleet_id = fatlink.esi_fleet_id
     fleet_id = get_fleet_id(token)
     if not fleet_id:
-        messages.error(request, "❌ No active fleet (ESI) found.")
         logger.warning("❌ Keine aktive Flotte (ESI) gefunden.")
-        return HttpResponseRedirect(reverse('afctrack:start_fleet'))
+        if request:
+            messages.error(request, "❌ No active fleet (ESI) found.")
+        return False
 
     # Doctrine-Link abrufen
     doctrine_link = "N/A"
     try:
         doctrine_obj = Doctrine.objects.get(name=doctrine_name)
-        domain = request.get_host()
-        scheme = 'https' if request.is_secure() else 'http'
-        base_url = f"{scheme}://{domain}"
         doctrine_link = f"{base_url}/fittings/doctrine/{doctrine_obj.id}"
 #        doctrine_link = f"https://aa.igc-alliance.online/fittings/doctrine/{doctrine_obj.id}"
     except Doctrine.DoesNotExist:
@@ -309,11 +296,33 @@ def update_fleet_motd(request, token):
         )
         api_response = response.result()
         logger.info(f"✅ Flotten-MOTD erfolgreich geändert: {motd}")
-        messages.success(request, "✅ MOTD erfolgreich gesetzt")
-        return HttpResponseRedirect(reverse('afctrack:create_esi_fleet'))
+        if request:
+            messages.success(request, "✅ MOTD erfolgreich gesetzt")
+        return True
     except Exception as e:
         logger.exception(f"❌ Fehler beim Setzen der neuen MOTD: {e}")
-        messages.error(request, f"❌ Fehler beim Setzen der neuen MOTD: {e}")
+        if request:
+            messages.error(request, f"❌ Fehler beim Setzen der neuen MOTD: {e}")
+        return False
+
+@token_required(scopes=['esi-fleets.read_fleet.v1', 'esi-fleets.write_fleet.v1'])
+def update_fleet_motd(request, token):
+    """Updates the MOTD for the fleet (View)."""
+    
+    # Get data from session
+    fleet_boss = request.session.get('fleet_boss')
+    doctrine_name = request.session.get('doctrine_name')
+    comms = request.session.get('comms')
+
+    domain = request.get_host()
+    scheme = 'https' if request.is_secure() else 'http'
+    base_url = f"{scheme}://{domain}"
+
+    success = set_fleet_motd(token, fleet_boss, doctrine_name, comms, base_url, request=request)
+
+    if success:
+        return HttpResponseRedirect(reverse('afctrack:create_esi_fleet'))
+    else:
         return HttpResponseRedirect(reverse('afctrack:start_fleet'))
     
 def get_fleet_id(token):
@@ -344,14 +353,18 @@ def create_esi_fleet(request):
     request.session.save()  # 🔥 WICHTIG: Session-Änderungen speichern
 
     # Speichere nur relevante Daten für Celery
+    # Wir brauchen auch fleet_boss und comms für die MOTD
     session_data = {
-        "fleet_name": request.session["fatlink_form__name"],
-        "doctrine_name": request.session["fatlink_form__doctrine"],
-        "fleet_type": request.session["fatlink_form__type"],
+        "fleet_boss": request.session.get('fleet_boss'),
+        "doctrine_name": request.session.get('doctrine_name'),
+        "comms": request.session.get('comms'),
+        # Base URL für Doctrine Links im Task generieren
+        "base_url": f"{'https' if request.is_secure() else 'http'}://{request.get_host()}"
     }
 
     # ✅ Starte Celery Task
-    delayed_updated_fleet_motd.apply_async(args=[session_data])
+    # Wir übergeben die User ID, damit der Task den Token finden kann
+    delayed_updated_fleet_motd.apply_async(args=[request.user.id, session_data])
 
     # Redirect zur FATLink-Erstellung
     return HttpResponseRedirect(reverse("afat:fatlinks_create_esi_fatlink_callback", args=[fatlink_hash]))

@@ -2,29 +2,43 @@ from django.contrib.sessions.backends.db import SessionStore
 import logging
 import time
 from celery import shared_task
+from django.contrib.auth.models import User
+from esi.models import Token
 
 logger = logging.getLogger(__name__)
 
 @shared_task
-def delayed_updated_fleet_motd(session_data):
+def delayed_updated_fleet_motd(user_id, session_data):
     """Updates the MOTD for the fleet after a delay."""
-    import logging
-    logger = logging.getLogger(__name__)
+    
+    # Import hier, um Zirkuläre Imports zu vermeiden
+    from afctrack.views import set_fleet_motd
 
-    logger.warning("🚀 Celery-Task gestartet mit Daten: %s", session_data)
+    logger.info(f"🚀 Celery-Task gestartet für User ID {user_id} mit Daten: {session_data}")
 
-    from django.contrib.auth.models import AnonymousUser
-    from afctrack.views import update_fleet_motd
+    try:
+        user = User.objects.get(id=user_id)
+        
+        # Suche einen gültigen Token für den User mit Schreibrechten
+        token = Token.objects.filter(
+            user=user,
+            scopes__name='esi-fleets.write_fleet.v1'
+        ).first()
 
-    class DummyRequest:
-        session = session_data
-        user = AnonymousUser()  # Fake-User hinzufügen
+        if not token:
+            logger.error(f"❌ Kein gültiger Token mit Scope 'esi-fleets.write_fleet.v1' für User {user} gefunden.")
+            return
 
-    logger.warning("🚀 Aufruf von update_fleet_motd mit DummyRequest")
+        # Rufe die Logik direkt auf (ohne Request-Objekt)
+        set_fleet_motd(
+            token=token,
+            fleet_boss=session_data.get('fleet_boss'),
+            doctrine_name=session_data.get('doctrine_name'),
+            comms=session_data.get('comms'),
+            base_url=session_data.get('base_url')
+        )
 
-    result = update_fleet_motd(DummyRequest(), None)  # Token bleibt None
-
-    logger.warning("✅ update_fleet_motd abgeschlossen mit Result: %s", result)
-
-    return result
-
+    except User.DoesNotExist:
+        logger.error(f"❌ User mit ID {user_id} nicht gefunden.")
+    except Exception as e:
+        logger.exception(f"❌ Unerwarteter Fehler im Task: {e}")
