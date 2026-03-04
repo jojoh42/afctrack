@@ -1,5 +1,6 @@
 import calendar
 import logging
+from urllib.parse import urlencode
 from datetime import datetime
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render
@@ -238,14 +239,15 @@ def start_fleet(request):
                 "comms_options": comms_options,
             })
 
-        # Save data in session
-        request.session['fleet_boss'] = fleet_boss
-        request.session['doctrine_name'] = doctrine_name
-        request.session['fleet_type'] = fleet_type
-        request.session['comms'] = comms
-        request.session['fleet_name'] = fleet_name
-        # Redirect to the update_fleet_motd view
-        return HttpResponseRedirect(reverse('afctrack:update_fleet_motd'))
+        # Pass data via URL parameters instead of session to avoid DB writes
+        params = urlencode({
+            'fleet_boss': fleet_boss,
+            'fleet_name': fleet_name,
+            'doctrine_name': doctrine_name,
+            'fleet_type': fleet_type,
+            'comms': comms
+        })
+        return HttpResponseRedirect(f"{reverse('afctrack:update_fleet_motd')}?{params}")
 
     return render(request, "afctrack/start_fleet.html", {
         "doctrines": doctrines,
@@ -258,7 +260,7 @@ def set_fleet_motd(token, fleet_boss, doctrine_name, comms, base_url, request=No
     Helper function to set the fleet MOTD.
     Can be called from a view (with request) or a task (without request).
     """
-    if not all([fleet_boss, doctrine_name, fleet_type, comms]):
+    if not all([fleet_boss, doctrine_name, comms]):
         if request:
             messages.error(request, "❌ Missing fleet data")
         return False
@@ -309,10 +311,13 @@ def set_fleet_motd(token, fleet_boss, doctrine_name, comms, base_url, request=No
 def update_fleet_motd(request, token):
     """Updates the MOTD for the fleet (View)."""
     
-    # Get data from session
-    fleet_boss = request.session.get('fleet_boss')
-    doctrine_name = request.session.get('doctrine_name')
-    comms = request.session.get('comms')
+    # Get data from GET parameters
+    fleet_boss = request.GET.get('fleet_boss')
+    doctrine_name = request.GET.get('doctrine_name')
+    comms = request.GET.get('comms')
+    # We also need these to pass them forward
+    fleet_name = request.GET.get('fleet_name')
+    fleet_type = request.GET.get('fleet_type')
 
     domain = request.get_host()
     scheme = 'https' if request.is_secure() else 'http'
@@ -321,7 +326,14 @@ def update_fleet_motd(request, token):
     success = set_fleet_motd(token, fleet_boss, doctrine_name, comms, base_url, request=request)
 
     if success:
-        return HttpResponseRedirect(reverse('afctrack:create_esi_fleet'))
+        params = urlencode({
+            'fleet_boss': fleet_boss,
+            'fleet_name': fleet_name,
+            'doctrine_name': doctrine_name,
+            'fleet_type': fleet_type,
+            'comms': comms
+        })
+        return HttpResponseRedirect(f"{reverse('afctrack:create_esi_fleet')}?{params}")
     else:
         return HttpResponseRedirect(reverse('afctrack:start_fleet'))
     
@@ -345,20 +357,13 @@ def create_esi_fleet(request):
     """
     fatlink_hash = get_hash_on_save()
 
-    # ✅ Speichere Werte explizit in der Session
-    request.session["fatlink_form__name"] = request.session.get("fleet_name", "Default Name")
-    request.session["fatlink_form__doctrine"] = request.session.get("doctrine_name", "Default Doctrine")
-    request.session["fatlink_form__type"] = request.session.get("fleet_type", "Default Type")
-    
-    request.session.save()  # 🔥 WICHTIG: Session-Änderungen speichern
-
-    # Speichere nur relevante Daten für Celery
-    # Wir brauchen auch fleet_boss und comms für die MOTD
+    # Get data from GET parameters for Celery task
     session_data = {
-        "fleet_boss": request.session.get('fleet_boss'),
-        "doctrine_name": request.session.get('doctrine_name'),
-        "comms": request.session.get('comms'),
-        # Base URL für Doctrine Links im Task generieren
+        "fleet_boss": request.GET.get('fleet_boss'),
+        "doctrine_name": request.GET.get('doctrine_name'),
+        "comms": request.GET.get('comms'),
+        "fleet_name": request.GET.get('fleet_name'),
+        "fleet_type": request.GET.get('fleet_type'),
         "base_url": f"{'https' if request.is_secure() else 'http'}://{request.get_host()}"
     }
 
