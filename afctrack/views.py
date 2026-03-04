@@ -17,6 +17,7 @@ from .app_settings import POINTS, AFCTRACK_FC_GROUPS, AFCTRACK_FLEET_TYPE_GROUPS
 from afat.models import get_hash_on_save
 from .tasks import delayed_updated_fleet_motd
 from esi.models import Token
+from eve_sde.models.map import SolarSystem
 
 logger = logging.getLogger(__name__)  # ✅ Logging setup
 
@@ -220,6 +221,9 @@ def fleet_type_amount(request):
 def start_fleet(request):
     """Handles the fleet creation form and updates the MOTD after submission."""
     
+    # DEBUG: Print SolarSystem fields to console
+    print(f"DEBUG SolarSystem Fields: {SolarSystem._meta.fields}")
+
     doctrines = Doctrine.objects.all()
     fleet_types = FLEET_TYPES
     comms_options = COMMS_OPTIONS
